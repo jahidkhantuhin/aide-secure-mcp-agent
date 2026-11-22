@@ -14,7 +14,14 @@ const apiOrigin = new URL(
 const config: NextConfig = {
   transpilePackages: ['@aide/shared'],
   async rewrites() {
-    return [{ source: '/api/health', destination: apiOrigin + '/health' }];
+    return [
+      { source: '/api/health', destination: apiOrigin + '/health' },
+      {
+        source: '/api/auth/:path*',
+        destination: apiOrigin + '/api/auth/:path*',
+      },
+      { source: '/api/sandbox', destination: apiOrigin + '/api/sandbox' },
+    ];
   },
   async headers() {
     return [

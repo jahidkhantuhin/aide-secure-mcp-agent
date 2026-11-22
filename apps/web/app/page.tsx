@@ -1,4 +1,5 @@
 import { ApiStatus } from './status';
+import { DemoButton } from './demo-button';
 
 const sections = [
   'Assistant',
@@ -56,6 +57,15 @@ export default function Home() {
             A personal AI assistant for untrusted inboxes, with action previews
             and human approval.
           </p>
+          <div className="mt-8 flex flex-wrap items-start gap-4">
+            <DemoButton />
+            <a
+              href="/login"
+              className="rounded border border-neutral-500 px-4 py-2"
+            >
+              Owner sign in
+            </a>
+          </div>
         </section>
       </main>
     </div>

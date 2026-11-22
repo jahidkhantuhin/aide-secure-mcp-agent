@@ -20,4 +20,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint
       - run: pnpm typecheck
+      - run: docker compose up -d --wait mongo mongo-init
       - run: pnpm test
+        env:
+          TEST_MONGODB_URI: mongodb://localhost:27027/aide?replicaSet=rs0

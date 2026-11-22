@@ -1,5 +1,7 @@
+import { randomBytes } from 'node:crypto';
 import { MongoClient } from 'mongodb';
 import { createClient } from 'redis';
+import { createSessionRoutes } from './session-routes.js';
 import { createApp } from './app.js';
 import { configSchema } from './config.js';
 
@@ -31,6 +33,11 @@ const server = createApp(
         .ping(),
   },
   new URL(config.WEB_ORIGIN).origin,
+  createSessionRoutes(
+    mongo,
+    config,
+    config.AIDE_SESSION_SECRET ?? randomBytes(32).toString('base64url'),
+  ),
 ).listen(config.API_PORT, '127.0.0.1', () => {
   console.info('Aide API listening on port %d', config.API_PORT);
 });

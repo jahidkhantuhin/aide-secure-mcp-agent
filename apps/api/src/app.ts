@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import cors from 'cors';
-import express, { type ErrorRequestHandler } from 'express';
+import express, { type ErrorRequestHandler, type Router } from 'express';
 import helmet from 'helmet';
 import { pinoHttp } from 'pino-http';
 import { z } from 'zod';
@@ -19,11 +19,20 @@ const handleError: ErrorRequestHandler = (error, req, res, next) => {
   res.status(status).json({ error: { message, requestId: req.id } });
 };
 
-export function createApp(probes: Probes, webOrigin: string) {
+export function createApp(
+  probes: Probes,
+  webOrigin: string,
+  sessionRoutes?: Router,
+) {
   const app = express();
   app.disable('x-powered-by');
   app.use(
     pinoHttp({
+      redact: [
+        'req.headers.cookie',
+        'req.headers.authorization',
+        'res.headers["set-cookie"]',
+      ],
       genReqId: (_req, res) => {
         const id = randomUUID();
         res.setHeader('x-request-id', id);
@@ -33,6 +42,7 @@ export function createApp(probes: Probes, webOrigin: string) {
   );
   app.use(helmet());
   app.use(cors({ origin: webOrigin }));
+  if (sessionRoutes) app.use(sessionRoutes);
   app.use(express.json({ limit: '32kb' }));
   app.get(
     '/health',

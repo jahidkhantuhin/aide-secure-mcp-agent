@@ -37,6 +37,14 @@ Run `pnpm lint`, `pnpm typecheck`, and `pnpm test` from the root. The API tests 
 
 See [Progress](docs/PROGRESS.md), [Technology notes](docs/TECH-NOTES.md), and [Interview Q&A](docs/INTERVIEW-QA.md).
 
+## Owner and demo sessions
+
+Choose **Try the demo, no signup** on the home page to open a temporary, empty mock workspace. Each session has its own mailbox, calendar, and social data. The default limit is 30 requests per minute, the session expires after one hour, and its token allowance is reserved for agent work in later steps.
+
+Owner registration is a local CLI operation. Set `AIDE_SESSION_SECRET` in the root `.env` using the output of `node -p "require('node:crypto').randomBytes(32).toString('base64url')"`. Set `AIDE_OWNER_EMAIL`, `AIDE_OWNER_NAME`, and a password of at least 12 characters through the command environment or ignored `.env`. Run `pnpm owner:register`, remove the registration password from that environment or file, and start or restart `pnpm dev`. Open **Owner sign in** and use the registered credentials.
+
+The API creates its indexes when it first handles a session request. You can pre-create them with `pnpm db:bootstrap`. Set `TEST_MONGODB_URI` in your test shell to the Compose replica-set URI and run `pnpm test` for auth, session isolation, request and token limits, and TTL cleanup. The TTL monitor test can take about a minute.
+
 ## Author
 
 Jahid Khan Tuhin, Full Stack JavaScript Engineer.
