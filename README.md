@@ -26,7 +26,9 @@ pnpm dev
 
 Open http://localhost:3000 and look for the green **API online** badge. The API health endpoint is http://127.0.0.1:4000/health. Mailpit's inbox is at http://127.0.0.1:8125. The Compose stack publishes MongoDB on 27027, Redis on 6389, and Mailpit SMTP on 1125. All four ports bind to loopback.
 
-Run `pnpm lint`, `pnpm typecheck`, and `pnpm test` from the root. The API tests use dependency probes, so the test suite can run without Docker.
+Run `pnpm check` from the root to reproduce the Husky pre-push and GitHub Actions checks. It starts the local MongoDB replica set, runs lint and type checking, runs every workspace package's test script with MongoDB integration enabled, and runs workspace build scripts. Keep Docker running for pushes. Run `pnpm prepare` if you installed dependencies with hooks disabled.
+
+When adding a test, make sure its package's `test` script discovers it. When a suite needs another runner or service, wire it into the shared check so both gates run it. For GitHub-side enforcement, configure the CI `checks` job as a required status check on the default branch and require pull requests.
 
 ## Workspace
 
