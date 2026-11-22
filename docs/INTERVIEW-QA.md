@@ -27,3 +27,17 @@ MongoDB checks the count and token balance and applies both updates in a single 
 **How do you keep owner signup private?**
 
 The HTTP app exposes sign-in, sign-out, and identity. The registration command creates the owner directly through Better Auth, and the database enforces a unique owner slot.
+
+## Step 3
+
+**How can a tool apply a preview when MCP is stateless?**
+
+Calendar writes carry the event ID and revision. Mail sends carry the draft ID and contents. A fresh protocol server can validate either against the provider without reading transport session state.
+
+**How are read tools and previews tested?**
+
+The official SDK client calls each tool, and the contract suite compares provider snapshots before and after reads and previews. Write tests check stale calendar revisions and repeated mail sends.
+
+**What changes when the mock provider is replaced?**
+
+The tools bind to typed calendar and mail interfaces. A replacement provider implements those contracts. Authorization and approval have to be enforced independently of annotations.

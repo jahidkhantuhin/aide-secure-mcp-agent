@@ -4,6 +4,7 @@ import { createClient } from 'redis';
 import { createSessionRoutes } from './session-routes.js';
 import { createApp } from './app.js';
 import { configSchema } from './config.js';
+import { createMcpRoutes } from './mcp-routes.js';
 
 const config = configSchema.parse(process.env);
 const mongo = new MongoClient(config.MONGODB_URI, {
@@ -24,6 +25,7 @@ void redis
     console.error('Redis startup error:', error.message),
   );
 
+const mcp = createMcpRoutes();
 const server = createApp(
   {
     mongo: () => mongo.db('admin').command({ ping: 1 }),
@@ -38,6 +40,7 @@ const server = createApp(
     config,
     config.AIDE_SESSION_SECRET ?? randomBytes(32).toString('base64url'),
   ),
+  mcp.router,
 ).listen(config.API_PORT, '127.0.0.1', () => {
   console.info('Aide API listening on port %d', config.API_PORT);
 });
@@ -48,10 +51,11 @@ function shutdown() {
     process.exit(1);
   }, 8_000);
   deadline.unref();
+  const closeMcp = mcp.close();
   server.close(async () => {
     try {
       if (redis.isOpen) redis.destroy();
-      await mongo.close();
+      await Promise.all([closeMcp, mongo.close()]);
     } catch (error) {
       console.error('Connection cleanup failed:', error);
       process.exitCode = 1;

@@ -97,6 +97,16 @@ describe.skipIf(!uri)('MongoDB sessions', () => {
     const secondCookie = second.get('Set-Cookie')?.[0].split(';')[0] ?? '';
     expect(first.get('Set-Cookie')?.[0]).toContain('HttpOnly');
     expect(first.body.world.id).not.toEqual(second.body.world.id);
+    expect(first.body.world.mailbox).toEqual(second.body.world.mailbox);
+    expect(first.body.world.mailbox).toContainEqual(
+      expect.objectContaining({ id: 'design-agenda' }),
+    );
+    expect(first.body.world.calendar).toContainEqual(
+      expect.objectContaining({ id: 'design-review' }),
+    );
+    expect(first.body.world.social).toContainEqual(
+      expect.objectContaining({ author: '@sam-rivera' }),
+    );
     const own = await app
       .get('/api/sandbox')
       .set('Cookie', secondCookie)

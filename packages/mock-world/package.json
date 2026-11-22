@@ -2,5 +2,16 @@
   "name": "@aide/mock-world",
   "version": "0.1.0",
   "private": true,
-  "author": "Jahid Khan Tuhin"
+  "author": "Jahid Khan Tuhin",
+  "type": "module",
+  "exports": "./src/index.ts",
+  "scripts": {
+    "typecheck": "tsc"
+  },
+  "dependencies": {
+    "@aide/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.2"
+  }
 }

@@ -22,7 +22,7 @@ const handleError: ErrorRequestHandler = (error, req, res, next) => {
 export function createApp(
   probes: Probes,
   webOrigin: string,
-  sessionRoutes?: Router,
+  ...routers: Router[]
 ) {
   const app = express();
   app.disable('x-powered-by');
@@ -42,7 +42,7 @@ export function createApp(
   );
   app.use(helmet());
   app.use(cors({ origin: webOrigin }));
-  if (sessionRoutes) app.use(sessionRoutes);
+  for (const router of routers) app.use(router);
   app.use(express.json({ limit: '32kb' }));
   app.get(
     '/health',

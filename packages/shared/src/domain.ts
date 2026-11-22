@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { mockWorldSchema } from '@aide/shared/mock-world';
 
 const id = z.string().min(1);
 const date = z.date();
@@ -37,12 +38,6 @@ export const ownerViewSchema = z.strictObject({
   email: z.email(),
 });
 
-export const mockWorldSchema = z.strictObject({
-  id,
-  mailbox: z.array(z.never()),
-  calendar: z.array(z.never()),
-  social: z.array(z.never()),
-});
 export const sandboxSessionSchema = z.strictObject({
   _id: id,
   createdAt: date,

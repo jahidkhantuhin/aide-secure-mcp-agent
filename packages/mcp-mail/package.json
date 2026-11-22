@@ -1,0 +1,24 @@
+{
+  "name": "@aide/mcp-mail",
+  "version": "0.1.0",
+  "private": true,
+  "author": "Jahid Khan Tuhin",
+  "type": "module",
+  "exports": "./src/index.ts",
+  "scripts": {
+    "typecheck": "tsc",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@aide/mock-world": "workspace:*",
+    "@aide/shared": "workspace:*",
+    "@modelcontextprotocol/server": "2.4.0",
+    "zod": "^4.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.0",
+    "tsx": "^4.20.0",
+    "vitest": "^4.0.0",
+    "@modelcontextprotocol/client": "2.4.0"
+  }
+}

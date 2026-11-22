@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { seedWorld } from '@aide/mock-world';
 import { sandboxSessionSchema, type SandboxSession } from '@aide/shared/domain';
 import type { Db } from 'mongodb';
 
@@ -10,7 +11,7 @@ export class SandboxRepository {
       _id: randomUUID(),
       createdAt: now,
       expiresAt: new Date(now.getTime() + ttlSeconds * 1000),
-      world: { id: randomUUID(), mailbox: [], calendar: [], social: [] },
+      world: seedWorld(randomUUID()),
       tokensRemaining: budget,
       window: Math.floor(now.getTime() / 60_000),
       requests: 0,
