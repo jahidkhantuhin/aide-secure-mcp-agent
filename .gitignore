@@ -1,0 +1,9 @@
+/Aide-Build-Prompt.md
+node_modules/
+.next/
+coverage/
+*.tsbuildinfo
+next-env.d.ts
+.env
+.env.*
+!.env.example

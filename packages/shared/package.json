@@ -1,0 +1,14 @@
+{
+  "name": "@aide/shared",
+  "version": "0.1.0",
+  "private": true,
+  "author": "Jahid Khan Tuhin",
+  "type": "module",
+  "exports": "./src/index.ts",
+  "scripts": {
+    "typecheck": "tsc"
+  },
+  "dependencies": {
+    "zod": "^4.1.0"
+  }
+}

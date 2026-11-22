@@ -1,0 +1,53 @@
+services:
+  mongo:
+    image: mongo:8.0
+    command: ['mongod', '--replSet', 'rs0', '--bind_ip_all', '--port', '27027']
+    ports:
+      - '127.0.0.1:27027:27027'
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'mongosh',
+          '--port',
+          '27027',
+          '--quiet',
+          '--eval',
+          'quit(db.hello().isWritablePrimary ? 0 : 1)',
+        ]
+      interval: 3s
+      timeout: 5s
+      retries: 30
+  mongo-init:
+    image: mongo:8.0
+    depends_on:
+      mongo:
+        condition: service_started
+    command:
+      - bash
+      - -ec
+      - |
+        until mongosh 'mongodb://mongo:27027/admin?directConnection=true' --quiet --eval 'db.adminCommand({ping:1})'; do sleep 2; done
+        mongosh 'mongodb://mongo:27027/admin?directConnection=true' --quiet --eval '
+          try { rs.status() } catch (error) {
+            if (error.code !== 94) throw error;
+            rs.initiate({_id:"rs0", members:[{_id:0, host:"localhost:27027"}]});
+          }'
+  redis:
+    image: redis:8-alpine
+    ports:
+      - '127.0.0.1:6389:6379'
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 3s
+      timeout: 3s
+      retries: 15
+  mailpit:
+    image: axllent/mailpit:v1.28
+    ports:
+      - '127.0.0.1:1125:1025'
+      - '127.0.0.1:8125:8025'
+volumes:
+  mongo-data:
