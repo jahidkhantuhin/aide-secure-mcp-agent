@@ -18,4 +18,5 @@ jobs:
         with:
           node-version: '24'
       - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @aide/web exec playwright install-deps chromium
       - run: pnpm check

@@ -27,6 +27,10 @@ const config: NextConfig = {
         destination: apiOrigin + '/api/auth/:path*',
       },
       { source: '/api/sandbox', destination: apiOrigin + '/api/sandbox' },
+      {
+        source: '/api/security-lab',
+        destination: apiOrigin + '/api/security-lab',
+      },
     ];
   },
   async headers() {

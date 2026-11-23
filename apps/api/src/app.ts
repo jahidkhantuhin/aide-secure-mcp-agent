@@ -9,11 +9,15 @@ import { validate } from './validate.js';
 
 const handleError: ErrorRequestHandler = (error, req, res, next) => {
   if (res.headersSent) return next(error);
-  const status = error.status === 400 ? 400 : error.status === 404 ? 404 : 500;
+  const status =
+    error.status === 400 || error.status === 404 || error.status === 413
+      ? (error.status as 400 | 404 | 413)
+      : 500;
   if (status === 500) req.log.error({ err: error }, 'Unhandled API error');
   const message = {
     400: 'Invalid request',
     404: 'Not found',
+    413: 'Request body too large',
     500: 'Internal server error',
   }[status];
   res.status(status).json({ error: { message, requestId: req.id } });

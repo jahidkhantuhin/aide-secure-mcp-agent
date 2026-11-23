@@ -219,7 +219,18 @@ export const attackAttemptSchema = z.strictObject({
   outcome: z.enum(['blocked', 'allowed']),
   createdAt: date,
   expiresAt: date,
+  fixture: z.enum(['routine', 'restricted']).optional(),
+  reason: z.string().optional(),
 });
+
+export const labResultSchema = z.strictObject({
+  id,
+  outcome: z.enum(['blocked', 'allowed']),
+  reason: z.string(),
+  attempts: count,
+  blocked: count,
+});
+export type LabResult = z.infer<typeof labResultSchema>;
 
 export const sandboxViewSchema = z.strictObject({
   world: mockWorldSchema,

@@ -29,3 +29,7 @@ Added owner mock-action previews, checkpointed approval, editable drafts, and re
 ## Step 7
 
 Added tool-free extraction, bounded source normalization, a fixed-vocabulary planner input, quarantine risk decisions, and deterministic egress screening in both approval and worker paths. Added guard notices to the Assistant and scoped guard activity records.
+
+## Step 8
+
+Added a mock-only public mode with Redis request limits and a shared task budget. Security Lab runs fixed egress fixtures and records session-scoped results. Added a nonce-based public browser CSP and a Playwright smoke test to the shared verification gate.

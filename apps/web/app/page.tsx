@@ -34,10 +34,11 @@ export default function Home() {
               </a>
             ) : section === 'Trust' ||
               section === 'Approvals' ||
-              section === 'Activity' ? (
+              section === 'Activity' ||
+              section === 'Security Lab' ? (
               <a
                 key={section}
-                href={'/' + section.toLowerCase()}
+                href={'/' + section.toLowerCase().replaceAll(' ', '-')}
                 className="px-3 py-2 text-sm text-[#b6ecc5]"
               >
                 {section}

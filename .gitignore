@@ -2,6 +2,7 @@
 node_modules/
 .next/
 coverage/
+/apps/web/test-results/
 *.tsbuildinfo
 next-env.d.ts
 .env

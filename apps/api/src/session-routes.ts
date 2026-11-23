@@ -14,16 +14,35 @@ import { PolicyRepository } from './policy-repository.js';
 import { createTrustRouter } from './trust.js';
 import { createApprovalsRouter } from './approvals.js';
 import { listGuardActivity } from './guard-activity.js';
+import type { createPublicSandboxLimits } from './public-sandbox.js';
+import { createSecurityLab } from './security-lab.js';
 
 export function createSessionRoutes(
   mongo: MongoClient,
   config: z.infer<typeof configSchema>,
   sandboxSecret: string,
   checkpointer?: MongoDBSaver,
+  publicLimits?: ReturnType<typeof createPublicSandboxLimits>,
 ) {
   const router = Router();
   const origin = new URL(config.WEB_ORIGIN).origin;
   const db = mongo.db();
+  const cookie = sandboxCookie(origin, sandboxSecret);
+  if (config.SANDBOX_PUBLIC) {
+    if (!publicLimits) throw new Error('Public sandbox requires Redis limits');
+    router.use(
+      ['/api/sandbox', '/tasks', '/activity', '/api/security-lab'],
+      async (req, res, next) => {
+        if (!(await publicLimits.request(cookie.sessionId(req)))) {
+          res
+            .status(429)
+            .json({ error: 'Public sandbox request limit reached' });
+          return;
+        }
+        next();
+      },
+    );
+  }
   let indexes: Promise<void> | undefined;
   function ready() {
     indexes ??= ensureIndexes(db).catch((error: unknown) => {
@@ -37,6 +56,7 @@ export function createSessionRoutes(
     [
       '/api/auth',
       '/api/sandbox',
+      '/api/security-lab',
       '/tasks',
       '/trust',
       '/approvals',
@@ -49,7 +69,10 @@ export function createSessionRoutes(
     },
   );
   const secret = config.AIDE_SESSION_SECRET;
-  const auth = secret ? createOwnerAuth(mongo, origin, secret) : null;
+  const auth =
+    secret && !config.SANDBOX_PUBLIC
+      ? createOwnerAuth(mongo, origin, secret)
+      : null;
   const getOwner = (req: Request) =>
     auth?.api.getSession({
       headers: fromNodeHeaders(req.headers),
@@ -73,6 +96,20 @@ export function createSessionRoutes(
     });
   }
   const sandbox = new SandboxRepository(db);
+  router.use(
+    '/api/security-lab',
+    createSecurityLab(db, origin, async (req) => {
+      const id = cookie.sessionId(req);
+      if (!id) return 401;
+      const now = new Date();
+      const session = await sandbox.consume(
+        id,
+        now,
+        config.SANDBOX_REQUESTS_PER_MINUTE,
+      );
+      return session ?? ((await sandbox.read(id, now)) ? 429 : 401);
+    }),
+  );
   const policy = new PolicyRepository(db);
   router.use(
     '/trust',
@@ -82,7 +119,6 @@ export function createSessionRoutes(
       return owner ? { kind: 'owner', id: owner.user.id } : null;
     }),
   );
-  const cookie = sandboxCookie(origin, sandboxSecret);
   router.get('/activity', async (req, res) => {
     if (req.query.scope === 'sandbox') {
       const id = cookie.sessionId(req);
@@ -100,7 +136,7 @@ export function createSessionRoutes(
     }
     res.json(await listGuardActivity(db, { kind: 'owner', id: owner.user.id }));
   });
-  if (checkpointer)
+  if (checkpointer && !config.SANDBOX_PUBLIC)
     router.use(
       '/approvals',
       json({ limit: '16kb' }),
@@ -128,15 +164,20 @@ export function createSessionRoutes(
             return {
               principal: { kind: 'sandbox', id: session._id },
               world: session.world,
-              charge: async () =>
-                Boolean(
+              charge: async () => {
+                const cost = 1000;
+                if (session.tokensRemaining < cost) return false;
+                if (publicLimits && !(await publicLimits.task(cost)))
+                  return false;
+                return Boolean(
                   await sandbox.consume(
                     session._id,
                     new Date(),
                     config.SANDBOX_REQUESTS_PER_MINUTE,
-                    1000,
+                    cost,
                   ),
-                ),
+                );
+              },
             };
           }
           if (req.query.scope === 'sandbox') return null;

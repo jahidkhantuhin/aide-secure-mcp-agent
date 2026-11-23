@@ -78,6 +78,29 @@ The owner can verify egress without sending mail by requesting a mock email with
 
 The extractor caps source text at 8,192 characters and handles a bounded set of encodings and formatting. It does not evaluate browser layout, identify arbitrary secrets, or detect every malicious instruction. Screening uses deterministic signals. The direct localhost MCP endpoints serve development fixtures.
 
+## Public sandbox mode
+
+Set `SANDBOX_PUBLIC=true` to run the API in mock-only mode. Remove the model API key and set `AIDE_LLM_PROVIDER=mock` or leave it unset. Public mode disables owner authentication, approvals, and the direct development MCP endpoints. The demo uses its signed sandbox cookie and its own mock world.
+
+Redis limits requests globally and per signed session. Tasks also reserve from a shared hourly budget and consume 1,000 units from their session budget. These units limit demo task count. The demo uses no paid model.
+
+From the demo workspace, open **Security Lab** and check the restricted and routine samples. The egress guard blocks the restricted fixture and allows the routine fixture. Each result includes a decision trace and session totals. The exercise sends no mail. It records fixture IDs and decisions through the session expiry, with no user-submitted message content.
+
+Public production pages use a per-request nonce to enforce browser CSP. The Playwright smoke test runs through `pnpm check` using Chromium and separate loopback ports 4300 and 4400 for the web app and API.
+
+```mermaid
+flowchart LR
+    Browser[Anonymous browser] --> Web[Web app]
+    subgraph API[Public API]
+        Limits[Redis request and task limits]
+        Session[Signed session and isolated mock world]
+        Guard[Quarantine and policy]
+        Mock[Mock model and tools]
+        Limits --> Session --> Guard --> Mock
+    end
+    Web --> Limits
+```
+
 ## Local MCP tools
 
 With `pnpm dev` running, the local API serves Streamable HTTP at `/mcp/calendar` and `/mcp/mail`. See [MCP setup](docs/MCP.md) for tool examples, Inspector, and Claude Desktop configuration.

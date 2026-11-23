@@ -7,6 +7,7 @@ import { createSessionRoutes } from './session-routes.js';
 import { createApp } from './app.js';
 import { configSchema } from './config.js';
 import { createMcpRoutes } from './mcp-routes.js';
+import { createPublicSandboxLimits } from './public-sandbox.js';
 
 const config = configSchema.parse(process.env);
 const mongo = new MongoClient(config.MONGODB_URI, {
@@ -35,7 +36,15 @@ void redis
     console.error('Redis startup error:', error.message),
   );
 
-const mcp = createMcpRoutes();
+const mcp = config.SANDBOX_PUBLIC ? null : createMcpRoutes();
+const publicLimits = config.SANDBOX_PUBLIC
+  ? createPublicSandboxLimits(
+      redis,
+      config.SANDBOX_GLOBAL_REQUESTS_PER_MINUTE,
+      config.SANDBOX_REQUESTS_PER_MINUTE,
+      config.SANDBOX_GLOBAL_TOKEN_BUDGET_PER_HOUR,
+    )
+  : undefined;
 const server = createApp(
   {
     mongo: () => mongo.db('admin').command({ ping: 1 }),
@@ -50,8 +59,9 @@ const server = createApp(
     config,
     config.AIDE_SESSION_SECRET ?? randomBytes(32).toString('base64url'),
     checkpointer,
+    publicLimits,
   ),
-  mcp.router,
+  ...(mcp ? [mcp.router] : []),
 ).listen(config.API_PORT, '127.0.0.1', () => {
   console.info('Aide API listening on port %d', config.API_PORT);
 });
@@ -62,7 +72,7 @@ function shutdown() {
     process.exit(1);
   }, 8_000);
   deadline.unref();
-  const closeMcp = mcp.close();
+  const closeMcp = mcp?.close();
   server.close(async () => {
     try {
       if (redis.isOpen) redis.destroy();

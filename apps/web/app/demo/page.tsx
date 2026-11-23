@@ -24,6 +24,9 @@ export default async function DemoPage() {
         Aide
       </a>
       <h1 className="mt-6 text-3xl font-semibold">Demo workspace</h1>
+      <a href="/security-lab" className="mt-3 inline-block text-emerald-300">
+        Security Lab
+      </a>
       <dl className="mt-6 grid gap-3">
         <div>
           <dt>Mailbox</dt>
