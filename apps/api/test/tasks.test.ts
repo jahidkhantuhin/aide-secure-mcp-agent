@@ -19,6 +19,8 @@ const origin = 'http://localhost:3000';
 const ping = async () => 'PONG';
 const mock: LLM = {
   async plan(prompt, signal) {
+    if (prompt === 'rate limited')
+      throw Object.assign(new Error('Provider failure'), { statusCode: 429 });
     if (prompt === 'slow') await delay(10_000, undefined, { signal });
     return { tools: ['list_events'], query: '' };
   },
@@ -149,6 +151,7 @@ describe.skipIf(!uri)('task API', () => {
     expect(body).toContain('require_approval');
     expect(body).not.toContain('TOOL_CALL_RESULT');
     expect(body).not.toContain('TOOL_CALL_START');
+    expect(body).toContain('Approval required for list_events');
     expect(await policy.decisions(principal)).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -158,6 +161,15 @@ describe.skipIf(!uri)('task API', () => {
         }),
       ]),
     );
+  });
+
+  it('reports planning failures separately from policy decisions', async () => {
+    const id = await create('rate limited');
+    const body = await (await req('/tasks/' + id + '/events')).text();
+    expect(body).toContain(
+      'Planning failed (mock). The provider rate limit or quota was reached.',
+    );
+    expect(body).not.toContain('POLICY_DECISION');
   });
 
   it('versions policy changes, audits matching grants, and denies grant use after revocation', async () => {

@@ -90,7 +90,9 @@ export function createTaskRouter(
     ]);
     const base = { runId: run._id, threadId: run._id };
     let sequence = 0;
-    async function append(event: { type: string }) {
+    let phase = '';
+    let failureMessage: string | undefined;
+    async function append(event: { type: string; stepName?: string }) {
       const parsed = agentEventSchema.parse({
         ...base,
         ...event,
@@ -98,6 +100,7 @@ export function createTaskRouter(
       });
       await repository.append(run._id, sequence + 1, parsed);
       sequence++;
+      if (event.type === 'STEP_STARTED') phase = event.stepName ?? '';
     }
     let status: 'completed' | 'failed' | 'cancelled' = 'completed';
     try {
@@ -124,16 +127,36 @@ export function createTaskRouter(
           );
           const event = { type: 'POLICY_DECISION', tool: name, decision };
           await append(event);
-          if (decision.outcome !== 'allow')
-            throw new Error('Tool blocked by policy.');
+          if (decision.outcome !== 'allow') {
+            failureMessage =
+              decision.outcome === 'require_approval'
+                ? `Approval required for ${name}. ${decision.reasons.join(' ')}`
+                : `Policy denied ${name}. ${decision.reasons.join(' ')}`;
+            throw new Error(failureMessage);
+          }
         },
         tool: (name, query, abortSignal) =>
           callMockTool(world, name, query, abortSignal),
         emit: append,
       });
       signal.throwIfAborted();
-    } catch {
+    } catch (error) {
       status = controller.signal.aborted ? 'cancelled' : 'failed';
+      if (status === 'failed' && !failureMessage && phase === 'Plan') {
+        const details = error as { statusCode?: unknown };
+        const code = details?.statusCode;
+        const modelProvider =
+          access.principal.kind === 'sandbox' ? 'mock' : provider;
+        const reason =
+          code === 401 || code === 403
+            ? 'Check the provider credentials.'
+            : code === 404
+              ? 'Check the configured model ID and access.'
+              : code === 429
+                ? 'The provider rate limit or quota was reached.'
+                : 'Check the model configuration or retry the task.';
+        failureMessage = `Planning failed (${modelProvider}). ${reason}`;
+      }
     }
     active.delete(run._id);
     const event =
@@ -141,7 +164,10 @@ export function createTaskRouter(
         ? { type: 'RUN_FINISHED' }
         : status === 'cancelled'
           ? { type: 'RUN_CANCELLED' }
-          : { type: 'RUN_ERROR', message: 'The task could not finish.' };
+          : {
+              type: 'RUN_ERROR',
+              message: failureMessage ?? 'The task could not finish.',
+            };
     await append(event);
     await repository.finish(run._id, status);
   }
