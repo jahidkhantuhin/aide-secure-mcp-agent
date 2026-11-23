@@ -47,6 +47,7 @@ export const policyInputSchema = z.strictObject({
   sensitivity: z
     .enum(['public', 'internal', 'confidential', 'restricted'])
     .default('internal'),
+  riskScore: z.int().min(0).max(100).optional(),
 });
 export type PolicyInput = z.infer<typeof policyInputSchema>;
 export const teamRecipients = [

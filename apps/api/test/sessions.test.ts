@@ -6,6 +6,7 @@ import { createApp } from '../src/app.js';
 import { createOwnerAuth } from '../src/auth.js';
 import { configSchema } from '../src/config.js';
 import { ensureIndexes } from '../src/database.js';
+import { recordGuard } from '../src/guard-activity.js';
 import { SandboxRepository } from '../src/sandbox-repository.js';
 import { createSessionRoutes } from '../src/session-routes.js';
 
@@ -95,6 +96,26 @@ describe.skipIf(!uri)('MongoDB sessions', () => {
     const second = await createSandbox().expect(201);
     const firstCookie = first.get('Set-Cookie')?.[0].split(';')[0] ?? '';
     const secondCookie = second.get('Set-Cookie')?.[0].split(';')[0] ?? '';
+    const firstSessionId = firstCookie.split('=')[1].split('.')[0];
+    await recordGuard(
+      db,
+      { kind: 'sandbox', id: firstSessionId },
+      {
+        layer: 'quarantine',
+        outcome: 'flagged',
+        reason: 'One formatting signal.',
+      },
+    );
+    const ownActivity = await app
+      .get('/activity?scope=sandbox')
+      .set('Cookie', firstCookie)
+      .expect(200);
+    expect(ownActivity.body).toHaveLength(1);
+    const otherActivity = await app
+      .get('/activity?scope=sandbox')
+      .set('Cookie', secondCookie)
+      .expect(200);
+    expect(otherActivity.body).toEqual([]);
     expect(first.get('Set-Cookie')?.[0]).toContain('HttpOnly');
     expect(first.body.world.id).not.toEqual(second.body.world.id);
     expect(first.body.world.mailbox).toEqual(second.body.world.mailbox);

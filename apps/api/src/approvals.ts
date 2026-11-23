@@ -19,6 +19,8 @@ import { Router, type Request } from 'express';
 import type { MongoClient } from 'mongodb';
 import { z } from 'zod';
 import { PolicyRepository } from './policy-repository.js';
+import { checkEgress } from '@aide/guard/egress';
+import { recordGuard } from './guard-activity.js';
 
 export function createApprovalsRouter(
   mongo: MongoClient,
@@ -36,13 +38,30 @@ export function createApprovalsRouter(
   const graph = createApprovalGraph(checkpointer);
   async function preview(ownerId: string, action: Action, runId: string) {
     const emails = action.tool === 'send' ? [action.content.to] : [];
-    const decision = await policy.decide(
+    const policyDecision = await policy.decide(
       { id: ownerId, kind: 'owner' },
       { tool: action.tool, recipients: emails, sensitivity: 'internal' },
       'preview',
       new Date(),
       runId,
     );
+    const egress = action.tool === 'send' ? checkEgress(action.content) : null;
+    if (egress && egress.outcome !== 'allow')
+      await recordGuard(
+        db,
+        { kind: 'owner', id: ownerId },
+        {
+          layer: 'egress',
+          outcome: egress.outcome === 'deny' ? 'blocked' : 'approval_required',
+          reason: egress.reasons.join(' '),
+        },
+      );
+    const decision =
+      egress?.outcome === 'deny' ||
+      (policyDecision.outcome === 'allow' &&
+        egress?.outcome === 'require_approval')
+        ? egress
+        : policyDecision;
     const recipients = emails.map((email) => ({
       email,
       external: !email.toLowerCase().endsWith('@example.test'),

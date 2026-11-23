@@ -13,6 +13,7 @@ import { createTaskRouter } from './tasks.js';
 import { PolicyRepository } from './policy-repository.js';
 import { createTrustRouter } from './trust.js';
 import { createApprovalsRouter } from './approvals.js';
+import { listGuardActivity } from './guard-activity.js';
 
 export function createSessionRoutes(
   mongo: MongoClient,
@@ -33,7 +34,14 @@ export function createSessionRoutes(
   }
 
   router.use(
-    ['/api/auth', '/api/sandbox', '/tasks', '/trust', '/approvals'],
+    [
+      '/api/auth',
+      '/api/sandbox',
+      '/tasks',
+      '/trust',
+      '/approvals',
+      '/activity',
+    ],
     async (_req, res, next) => {
       res.set('Cache-Control', 'no-store');
       await ready();
@@ -75,6 +83,23 @@ export function createSessionRoutes(
     }),
   );
   const cookie = sandboxCookie(origin, sandboxSecret);
+  router.get('/activity', async (req, res) => {
+    if (req.query.scope === 'sandbox') {
+      const id = cookie.sessionId(req);
+      if (!id || !(await sandbox.read(id, new Date()))) {
+        res.sendStatus(401);
+        return;
+      }
+      res.json(await listGuardActivity(db, { kind: 'sandbox', id }));
+      return;
+    }
+    const owner = await getOwner(req);
+    if (!owner) {
+      res.sendStatus(401);
+      return;
+    }
+    res.json(await listGuardActivity(db, { kind: 'owner', id: owner.user.id }));
+  });
   if (checkpointer)
     router.use(
       '/approvals',

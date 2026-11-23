@@ -22,6 +22,9 @@ export default async function WorkspacePage() {
         <a href="/trust" className="text-emerald-300">
           Trust settings
         </a>
+        <a href="/activity" className="text-emerald-300">
+          Activity
+        </a>
       </div>
       <Assistant scope="owner" />
       <a href="/approvals" className="mt-5 inline-block text-emerald-300">

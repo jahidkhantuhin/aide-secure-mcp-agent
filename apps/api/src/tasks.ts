@@ -22,6 +22,9 @@ import type { z } from 'zod';
 import type { configSchema } from './config.js';
 import { TaskRepository } from './task-repository.js';
 import { PolicyRepository } from './policy-repository.js';
+import { prepareWorld } from './quarantine-world.js';
+import { recordGuard } from './guard-activity.js';
+import type { GuardNotice } from '@aide/shared/security';
 
 type TaskAccess = {
   principal: Principal;
@@ -125,11 +128,26 @@ export function createTaskRouter(
         );
       }
       signal.throwIfAborted();
+      const { facts, safeWorld, riskByTool } = prepareWorld(world);
+      const flagged = facts.filter((fact) => fact.signals.length > 0).length;
+      const withheld = facts.filter((fact) => fact.riskScore >= 70).length;
+      async function notify(notice: GuardNotice) {
+        await recordGuard(db, access.principal, notice);
+        const event = { type: 'GUARD_NOTICE', notice };
+        await append(event);
+      }
+      if (flagged)
+        await notify({
+          layer: 'quarantine',
+          outcome: withheld ? 'blocked' : 'flagged',
+          reason: `${flagged} source(s) flagged. ${withheld} high-risk source(s) withheld.`,
+        });
       await runGraph({
         id: run._id,
         prompt,
         signal,
         checkpointer,
+        facts: facts.filter((fact) => fact.riskScore < 70),
         llm: access.principal.kind === 'sandbox' ? mock : owner,
         authorizeTool: async (name) => {
           const decision = await policy.decide(
@@ -138,6 +156,7 @@ export function createTaskRouter(
               tool: name,
               recipients: [],
               sensitivity: 'internal',
+              riskScore: riskByTool[name],
             },
             'agent',
             new Date(),
@@ -146,6 +165,12 @@ export function createTaskRouter(
           const event = { type: 'POLICY_DECISION', tool: name, decision };
           await append(event);
           if (decision.outcome !== 'allow') {
+            await notify({
+              layer: 'policy',
+              outcome:
+                decision.outcome === 'deny' ? 'blocked' : 'approval_required',
+              reason: decision.reasons.join(' '),
+            });
             failureMessage =
               decision.outcome === 'require_approval'
                 ? `Approval required for ${name}. ${decision.reasons.join(' ')}`
@@ -154,7 +179,7 @@ export function createTaskRouter(
           }
         },
         tool: (name, query, abortSignal) =>
-          callMockTool(world, name, query, abortSignal),
+          callMockTool(safeWorld, name, query, abortSignal),
         emit: append,
       });
       signal.throwIfAborted();

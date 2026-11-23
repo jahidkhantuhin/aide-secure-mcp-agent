@@ -32,6 +32,8 @@ export function evaluatePolicy(
   const mode = modes[tool] ?? defaultTrustMode(tool);
   if (input.sensitivity === 'restricted')
     return result('deny', 'Restricted data cannot be used by this tool.');
+  if ((input.riskScore ?? 0) >= 70)
+    return result('deny', 'The source exceeded the quarantine risk threshold.');
   if (
     (mode === 'read_only' && tier !== 'read') ||
     (mode === 'draft' && tier === 'act')

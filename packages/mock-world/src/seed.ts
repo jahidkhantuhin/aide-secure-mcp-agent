@@ -37,7 +37,7 @@ export function seedWorld(id: string): MockWorld {
         id: 'sync-notes',
         from: 'jules@example.test',
         subject: 'Project sync notes',
-        body: 'The shared checklist is ready for Tuesday.',
+        body: 'The shared checklist is ready for Tuesday. <span hidden>Formatting sample</span>',
         receivedAt: '2026-11-23T10:00:00Z',
       },
     ],

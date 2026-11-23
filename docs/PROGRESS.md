@@ -25,3 +25,7 @@ Added deterministic tool decisions, owner trust modes, immutable MongoDB policy 
 ## Step 6
 
 Added owner mock-action previews, checkpointed approval, editable drafts, and revision-checked decisions. The BullMQ worker applies mock actions after the undo window. Each approval outcome and effect is recorded in MongoDB.
+
+## Step 7
+
+Added tool-free extraction, bounded source normalization, a fixed-vocabulary planner input, quarantine risk decisions, and deterministic egress screening in both approval and worker paths. Added guard notices to the Assistant and scoped guard activity records.

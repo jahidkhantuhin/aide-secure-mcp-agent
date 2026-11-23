@@ -5,17 +5,21 @@
   "type": "module",
   "author": "Jahid Khan Tuhin",
   "exports": {
-    "./policy": "./policy/index.ts"
+    "./policy": "./policy/index.ts",
+    "./quarantine": "./quarantine/index.ts",
+    "./egress": "./egress/index.ts"
   },
   "scripts": {
     "typecheck": "tsc",
     "test": "vitest run"
   },
   "dependencies": {
-    "@aide/shared": "workspace:*"
+    "@aide/shared": "workspace:*",
+    "parse5": "^8.0.0"
   },
   "devDependencies": {
     "fast-check": "^4.11.0",
-    "vitest": "^4.0.0"
+    "vitest": "^4.0.0",
+    "@types/node": "^24.10.0"
   }
 }

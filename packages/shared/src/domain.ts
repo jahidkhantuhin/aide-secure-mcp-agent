@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { mockWorldSchema } from '@aide/shared/mock-world';
 import { decisionSchema } from '@aide/shared/policy';
+import { guardNoticeSchema } from '@aide/shared/security';
 
 const id = z.string().min(1);
 const date = z.date();
@@ -65,6 +66,11 @@ export const taskInputSchema = z.strictObject({
 
 const eventBase = { threadId: id, runId: id, timestamp: count };
 export const agentEventSchema = z.discriminatedUnion('type', [
+  z.strictObject({
+    ...eventBase,
+    type: z.literal('GUARD_NOTICE'),
+    notice: guardNoticeSchema,
+  }),
   z.strictObject({
     ...eventBase,
     type: z.literal('APPROVAL_REQUESTED'),

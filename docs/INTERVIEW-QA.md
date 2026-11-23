@@ -83,3 +83,17 @@ The unique idempotency key, approved mock effect, and final state are written in
 **How do edits and Undo stay safe?**
 
 Edits regenerate the card and increment its version. Approval requires that exact version. Undo checks the deadline and atomically changes the status before attempting to remove the Redis job.
+
+## Step 7
+
+**What gets from an inbox message into the planner?**
+
+The extractor emits validated sender categories, intent labels, dates, and requested-action categories marked as data. The guarded MCP view also uses derived fields. The planner receives no inbox prose.
+
+**Why enforce egress in both the approval API and the worker?**
+
+The API can explain a block before saving an approval. The worker checks the final payload inside the transaction before it writes to the mock outbox.
+
+**Can the quarantine detect every malicious instruction?**
+
+No. Its signals are heuristic. Fixed-vocabulary facts, authoritative tool permissions, explicit approval, and egress checks provide separate enforcement.

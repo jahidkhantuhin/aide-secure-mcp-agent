@@ -15,6 +15,7 @@ export function Assistant({ scope }: { scope: 'owner' | 'sandbox' }) {
   >('idle');
   const [runId, setRunId] = useState('');
   const [error, setError] = useState('');
+  const [guardMessage, setGuardMessage] = useState('');
   const stream = useRef<EventSource>(null);
   const running = status === 'running' || status === 'cancelling';
 
@@ -28,6 +29,7 @@ export function Assistant({ scope }: { scope: 'owner' | 'sandbox' }) {
     setRunId('');
     setAnswer('');
     setTimeline([]);
+    setGuardMessage('');
     try {
       const response = await fetch('/api/tasks' + scopeQuery, {
         method: 'POST',
@@ -62,6 +64,11 @@ export function Assistant({ scope }: { scope: 'owner' | 'sandbox' }) {
           setTimeline((entries) => [...entries, label]);
         }
         switch (data.type) {
+          case 'GUARD_NOTICE':
+            if (data.notice.layer === 'quarantine')
+              setGuardMessage(data.notice.reason);
+            add(`${data.notice.layer}: ${data.notice.reason}`);
+            break;
           case 'POLICY_DECISION':
             add(
               `Policy for ${data.tool}: ${data.decision.outcome.replaceAll('_', ' ')}. ${data.decision.reasons.join(' ')}`,
@@ -167,6 +174,20 @@ export function Assistant({ scope }: { scope: 'owner' | 'sandbox' }) {
       {status !== 'idle' && (
         <p className="mt-4 text-sm capitalize" role="status">
           {status}
+        </p>
+      )}
+      {guardMessage && (
+        <p
+          className="mt-4 rounded border border-amber-600/60 bg-amber-950 p-3 text-sm text-amber-100"
+          role="status"
+        >
+          Flagged content. {guardMessage}{' '}
+          <a
+            className="underline"
+            href={scope === 'sandbox' ? '/activity?scope=sandbox' : '/activity'}
+          >
+            View activity
+          </a>
         </p>
       )}
       {error && (

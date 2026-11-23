@@ -68,6 +68,16 @@ Sign in as the owner and open **Approvals** to request a mock email or calendar 
 
 `pnpm dev` starts the worker alongside the API and web app. The approval worker uses the existing MongoDB replica set and Redis. Set `AIDE_UNDO_SECONDS` to change the window. The Assistant continues to offer read tools, and the Approvals page is the entry point for mock writes.
 
+## Quarantine and egress
+
+Ask about Sam's inbox in a fresh demo and look for the **Flagged content** banner. A harmless hidden-formatting sample in the seeded mailbox exercises the notice. Open **Activity** to see the source layer and outcome. Activity is scoped to the current owner or sandbox session.
+
+A tool-free extractor reduces inbox messages, calendar titles, and social posts to fixed sender and intent categories, dates, and action categories marked as data. The planner and its MCP read tools get the guarded view. Source risk influences policy, and high-risk reads stop before MCP invocation. The same extractor can handle web fragments when that source is connected.
+
+The owner can verify egress without sending mail by requesting a mock email with the body `[restricted] QA sample`. The request should be denied and **Activity** should show an egress block. The worker rechecks before writing to the mock outbox. New recipients require approval, and the link allowlist currently accepts only the fixture origin `https://example.test`.
+
+The extractor caps source text at 8,192 characters and handles a bounded set of encodings and formatting. It does not evaluate browser layout, identify arbitrary secrets, or detect every malicious instruction. Screening uses deterministic signals. The direct localhost MCP endpoints serve development fixtures.
+
 ## Local MCP tools
 
 With `pnpm dev` running, the local API serves Streamable HTTP at `/mcp/calendar` and `/mcp/mail`. See [MCP setup](docs/MCP.md) for tool examples, Inspector, and Claude Desktop configuration.

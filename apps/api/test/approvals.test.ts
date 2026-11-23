@@ -107,6 +107,26 @@ describe.skipIf(!uri)('approval API', () => {
     expect(undone.action.content.body).toBe('Edited draft');
   });
 
+  it('blocks labeled content before an approval or outbox entry exists', async () => {
+    await post('')
+      .send({
+        ...action,
+        content: { ...action.content, body: '[restricted] QA marker' },
+      })
+      .expect(403);
+    expect(await db.collection('mockOutbox').countDocuments()).toBe(0);
+    expect(
+      await db
+        .collection('guardActivity')
+        .findOne({ layer: 'egress', outcome: 'blocked' }),
+    ).toBeTruthy();
+    expect(
+      await db
+        .collection('approvals')
+        .countDocuments({ 'action.content.body': '[restricted] QA marker' }),
+    ).toBe(0);
+  });
+
   it('rejects undo after the deadline and displays the calendar diff', async () => {
     const result = await post('')
       .send({

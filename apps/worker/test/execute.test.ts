@@ -48,7 +48,11 @@ describe.skipIf(!uri || !redisUrl)('approval job', () => {
     }
   });
 
-  async function insert(status: Approval['status'], undoUntil: Date) {
+  async function insert(
+    status: Approval['status'],
+    undoUntil: Date,
+    body = 'Mock payload',
+  ) {
     const id = randomUUID();
     await approval.insertOne({
       _id: id,
@@ -63,7 +67,7 @@ describe.skipIf(!uri || !redisUrl)('approval job', () => {
         content: {
           to: 'ari@example.test',
           subject: 'Review',
-          body: 'Mock payload',
+          body,
         },
       },
       preview: {
@@ -92,4 +96,20 @@ describe.skipIf(!uri || !redisUrl)('approval job', () => {
     await run(undone);
     expect(await db.collection('mockOutbox').countDocuments()).toBe(1);
   }, 10000);
+
+  it('rechecks egress on a stored approval before writing to the outbox', async () => {
+    const id = await insert('approved', new Date(0), '[restricted] QA marker');
+    await run(id);
+    expect((await approval.findOne({ _id: id }))?.status).toBe('failed');
+    expect(
+      await db
+        .collection('mockOutbox')
+        .findOne({ 'content.body': '[restricted] QA marker' }),
+    ).toBeNull();
+    expect(
+      await db
+        .collection('guardActivity')
+        .findOne({ layer: 'egress', outcome: 'blocked' }),
+    ).toBeTruthy();
+  });
 });

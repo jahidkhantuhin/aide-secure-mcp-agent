@@ -7,6 +7,7 @@ import { approvalRunEvent, type Run, type RunEvent } from '@aide/shared/domain';
 import { seedWorld } from '@aide/mock-world';
 import { calendarEventSchema } from '@aide/shared/mock-world';
 import type { ClientSession, MongoClient } from 'mongodb';
+import { checkEgress } from '@aide/guard/egress';
 
 export async function executeOnce(
   mongo: MongoClient,
@@ -84,7 +85,27 @@ export function createApprovalProcessor(
         throw new Error('Approval changed before execution');
       const item = approvalSchema.parse(row);
       let final = item.status;
-      if (item.status === 'approved' && item.action.tool === 'send') {
+      let failureMessage =
+        'The calendar changed after this action was previewed.';
+      if (
+        item.status === 'approved' &&
+        item.action.tool === 'send' &&
+        checkEgress(item.action.content).outcome === 'deny'
+      ) {
+        final = 'failed';
+        failureMessage = 'Egress blocked the outbound action.';
+        await db.collection('guardActivity').insertOne(
+          {
+            principal: { kind: 'owner', id: item.ownerId },
+            layer: 'egress',
+            outcome: 'blocked',
+            reason: failureMessage,
+            at: now,
+            expiresAt: new Date(now.getTime() + 7 * 86400000),
+          },
+          { session },
+        );
+      } else if (item.status === 'approved' && item.action.tool === 'send') {
         await outbox.insertOne(
           {
             _id: id,
@@ -140,8 +161,7 @@ export function createApprovalProcessor(
           : status === 'failed'
             ? {
                 type: 'RUN_ERROR',
-                message:
-                  'The calendar changed after this action was previewed.',
+                message: failureMessage,
               }
             : { type: 'RUN_CANCELLED' };
       await db

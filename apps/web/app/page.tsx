@@ -32,10 +32,12 @@ export default function Home() {
               >
                 {section}
               </a>
-            ) : section === 'Trust' || section === 'Approvals' ? (
+            ) : section === 'Trust' ||
+              section === 'Approvals' ||
+              section === 'Activity' ? (
               <a
                 key={section}
-                href={section === 'Trust' ? '/trust' : '/approvals'}
+                href={'/' + section.toLowerCase()}
                 className="px-3 py-2 text-sm text-[#b6ecc5]"
               >
                 {section}

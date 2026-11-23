@@ -2,7 +2,12 @@ import 'server-only';
 import { headers } from 'next/headers';
 
 export async function sessionRequest(
-  path: '/api/auth/me' | '/api/sandbox' | '/trust',
+  path:
+    | '/api/auth/me'
+    | '/api/sandbox'
+    | '/trust'
+    | '/activity'
+    | '/activity?scope=sandbox',
 ) {
   const incoming = await headers();
   const cookie = incoming.get('cookie');

@@ -18,7 +18,8 @@
     "mongodb": "^7.0.0",
     "mongodb-checkpoint": "npm:mongodb@6.22.0",
     "zod": "^4.1.0",
-    "ioredis": "^5.10.0"
+    "ioredis": "^5.10.0",
+    "@aide/guard": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^24.10.0",

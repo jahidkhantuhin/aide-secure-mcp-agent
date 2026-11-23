@@ -1,5 +1,6 @@
 import { generateText, Output, streamText, type LanguageModel } from 'ai';
 import { z } from 'zod';
+import type { ContentFact } from '@aide/shared/security';
 
 export const toolName = z.enum(['list_events', 'search']);
 export const planSchema = z.object({
@@ -10,7 +11,11 @@ export type Plan = z.infer<typeof planSchema>;
 export type Observation = { tool: z.infer<typeof toolName>; count: number };
 
 export interface LLM {
-  plan(prompt: string, signal: AbortSignal): Promise<Plan>;
+  plan(
+    prompt: string,
+    signal: AbortSignal,
+    facts?: ContentFact[],
+  ): Promise<Plan>;
   respond(
     prompt: string,
     observations: Observation[],
@@ -54,7 +59,7 @@ export class MockLLM implements LLM {
 
 export function aiSdkLLM(model: LanguageModel): LLM {
   return {
-    async plan(prompt, abortSignal) {
+    async plan(prompt, abortSignal, facts = []) {
       const response = await generateText({
         model,
         abortSignal,
@@ -63,7 +68,7 @@ export function aiSdkLLM(model: LanguageModel): LLM {
         output: Output.object({ schema: planSchema }),
         system:
           'Choose read-only tools for the fictional demo. list_events lists the demo calendar. search searches the mock inbox. Use an empty tools array for unrelated requests. Set query to a short search term.',
-        prompt,
+        prompt: JSON.stringify({ question: prompt, extractedFacts: facts }),
       });
       return response.output;
     },

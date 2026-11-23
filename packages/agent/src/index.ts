@@ -16,6 +16,7 @@ import {
   type Plan,
 } from './provider.js';
 import type { RunTool } from './tools.js';
+import { factSchema, type ContentFact } from '@aide/shared/security';
 
 export { MockLLM, type LLM } from './provider.js';
 export { callMockTool } from './tools.js';
@@ -64,6 +65,7 @@ export function runGraph(options: {
   signal: AbortSignal;
   llm: LLM;
   tool: RunTool;
+  facts?: ContentFact[];
   authorizeTool: (tool: Plan['tools'][number]) => Promise<void>;
   emit: (event: GraphEvent) => Promise<void>;
   checkpointer: BaseCheckpointSaver;
@@ -84,7 +86,13 @@ export function runGraph(options: {
     )
     .addNode('makePlan', (state) =>
       step('Plan', async () => {
-        const parsed = planSchema.parse(await llm.plan(state.prompt, signal));
+        const facts = factSchema
+          .array()
+          .max(60)
+          .parse(options.facts ?? []);
+        const parsed = planSchema.parse(
+          await llm.plan(state.prompt, signal, facts),
+        );
         const plan = { ...parsed, tools: [...new Set(parsed.tools)] };
         await emit({ type: 'PLAN_CREATED', tools: plan.tools });
         return { plan };

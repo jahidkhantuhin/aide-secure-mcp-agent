@@ -3,6 +3,12 @@ import type { Db } from 'mongodb';
 export async function ensureIndexes(db: Db) {
   await Promise.all([
     db
+      .collection('guardActivity')
+      .createIndexes([
+        { key: { 'principal.kind': 1, 'principal.id': 1, at: -1 } },
+        { key: { expiresAt: 1 }, expireAfterSeconds: 0 },
+      ]),
+    db
       .collection('approvals')
       .createIndexes([
         { key: { ownerId: 1, createdAt: -1 } },
