@@ -14,25 +14,10 @@ export function createSandboxRouter(
   },
 ) {
   const router = Router();
-  const secure = settings.origin.startsWith('https:');
-  const name = secure ? '__Host-aide_sandbox' : 'aide_sandbox';
-  const signature = (id: string) =>
-    createHmac('sha256', settings.secret)
-      .update('aide:sandbox:' + id)
-      .digest('base64url');
-
-  function sessionId(req: Request) {
-    const value = req.headers.cookie
-      ?.split(';')
-      .map((entry) => entry.trim())
-      .find((entry) => entry.startsWith(name + '='))
-      ?.slice(name.length + 1);
-    if (!value || !/^[0-9a-f-]{36}\.[\w-]{43}$/.test(value)) return null;
-    const [id, signed] = value.split('.');
-    return timingSafeEqual(Buffer.from(signed), Buffer.from(signature(id)))
-      ? id
-      : null;
-  }
+  const { secure, name, signature, sessionId } = sandboxCookie(
+    settings.origin,
+    settings.secret,
+  );
 
   function toView(session: SandboxSession) {
     return sandboxViewSchema.parse({
@@ -94,4 +79,27 @@ export function createSandboxRouter(
     res.status(401).json({ error: 'Sandbox session expired or missing' });
   });
   return router;
+}
+export function sandboxCookie(origin: string, secret: string) {
+  const secure = origin.startsWith('https:');
+  const name = secure ? '__Host-aide_sandbox' : 'aide_sandbox';
+  const signature = (id: string) =>
+    createHmac('sha256', secret)
+      .update('aide:sandbox:' + id)
+      .digest('base64url');
+
+  function sessionId(req: Request) {
+    const value = req.headers.cookie
+      ?.split(';')
+      .map((entry) => entry.trim())
+      .find((entry) => entry.startsWith(name + '='))
+      ?.slice(name.length + 1);
+    if (!value || !/^[0-9a-f-]{36}\.[\w-]{43}$/.test(value)) return null;
+    const [id, signed] = value.split('.');
+    return timingSafeEqual(Buffer.from(signed), Buffer.from(signature(id)))
+      ? id
+      : null;
+  }
+
+  return { secure, name, signature, sessionId };
 }

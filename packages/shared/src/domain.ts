@@ -11,10 +11,11 @@ const status = z.enum([
   'failed',
   'cancelled',
 ]);
-const identity = z.discriminatedUnion('kind', [
+export const identity = z.discriminatedUnion('kind', [
   z.strictObject({ kind: z.literal('owner'), id }),
   z.strictObject({ kind: z.literal('sandbox'), id }),
 ]);
+export type Principal = z.infer<typeof identity>;
 
 export const userSchema = z.strictObject({
   _id: z.custom<{ toHexString(): string }>(
@@ -56,6 +57,10 @@ export const runSchema = z.strictObject({
   createdAt: date,
   updatedAt: date,
 });
+export type Run = z.infer<typeof runSchema>;
+export const taskInputSchema = z.strictObject({
+  prompt: z.string().trim().min(1).max(1200),
+});
 
 const eventBase = { threadId: id, runId: id, timestamp: count };
 export const agentEventSchema = z.discriminatedUnion('type', [
@@ -82,7 +87,41 @@ export const agentEventSchema = z.discriminatedUnion('type', [
     messageId: id,
     delta: z.string(),
   }),
+  z.strictObject({
+    ...eventBase,
+    type: z.literal('TEXT_MESSAGE_START'),
+    messageId: id,
+  }),
+  z.strictObject({
+    ...eventBase,
+    type: z.literal('TEXT_MESSAGE_END'),
+    messageId: id,
+  }),
+  z.strictObject({
+    ...eventBase,
+    type: z.literal('PLAN_CREATED'),
+    tools: z.array(id),
+  }),
+  z.strictObject({
+    ...eventBase,
+    type: z.literal('TOOL_CALL_START'),
+    toolCallId: id,
+    toolCallName: id,
+  }),
+  z.strictObject({
+    ...eventBase,
+    type: z.literal('TOOL_CALL_END'),
+    toolCallId: id,
+  }),
+  z.strictObject({
+    ...eventBase,
+    type: z.literal('TOOL_CALL_RESULT'),
+    toolCallId: id,
+    count,
+  }),
+  z.strictObject({ ...eventBase, type: z.literal('RUN_CANCELLED') }),
 ]);
+export type AgentEvent = z.infer<typeof agentEventSchema>;
 export const runEventSchema = z.strictObject({
   _id: id,
   runId: id,
@@ -90,6 +129,7 @@ export const runEventSchema = z.strictObject({
   event: agentEventSchema,
   createdAt: date,
 });
+export type RunEvent = z.infer<typeof runEventSchema>;
 export const approvalSchema = z.strictObject({
   _id: id,
   runId: id,

@@ -1,18 +1,21 @@
 import { fromNodeHeaders, toNodeHandler } from 'better-auth/node';
+import type { MongoDBSaver } from '@langchain/langgraph-checkpoint-mongodb';
 import { ownerViewSchema } from '@aide/shared/domain';
-import { Router } from 'express';
+import { Router, json, type Request } from 'express';
 import type { MongoClient } from 'mongodb';
 import type { z } from 'zod';
 import { createOwnerAuth } from './auth.js';
 import type { configSchema } from './config.js';
 import { ensureIndexes } from './database.js';
 import { SandboxRepository } from './sandbox-repository.js';
-import { createSandboxRouter } from './sandbox.js';
+import { createSandboxRouter, sandboxCookie } from './sandbox.js';
+import { createTaskRouter } from './tasks.js';
 
 export function createSessionRoutes(
   mongo: MongoClient,
   config: z.infer<typeof configSchema>,
   sandboxSecret: string,
+  checkpointer?: MongoDBSaver,
 ) {
   const router = Router();
   const origin = new URL(config.WEB_ORIGIN).origin;
@@ -26,20 +29,25 @@ export function createSessionRoutes(
     return indexes;
   }
 
-  router.use(['/api/auth', '/api/sandbox'], async (_req, res, next) => {
-    res.set('Cache-Control', 'no-store');
-    await ready();
-    next();
-  });
+  router.use(
+    ['/api/auth', '/api/sandbox', '/tasks'],
+    async (_req, res, next) => {
+      res.set('Cache-Control', 'no-store');
+      await ready();
+      next();
+    },
+  );
   const secret = config.AIDE_SESSION_SECRET;
-  if (secret) {
-    const auth = createOwnerAuth(mongo, origin, secret);
+  const auth = secret ? createOwnerAuth(mongo, origin, secret) : null;
+  const getOwner = (req: Request) =>
+    auth?.api.getSession({
+      headers: fromNodeHeaders(req.headers),
+      query: { disableRefresh: true },
+    });
+  if (auth) {
     const handler = toNodeHandler(auth);
     router.get('/api/auth/me', async (req, res) => {
-      const session = await auth.api.getSession({
-        headers: fromNodeHeaders(req.headers),
-        query: { disableRefresh: true },
-      });
+      const session = await getOwner(req);
       if (!session) {
         res.status(401).json({ error: 'Sign in required' });
         return;
@@ -53,9 +61,40 @@ export function createSessionRoutes(
       res.status(401).json({ error: 'Sign in required' });
     });
   }
+  const sandbox = new SandboxRepository(db);
+  const cookie = sandboxCookie(origin, sandboxSecret);
+  if (checkpointer)
+    router.use(
+      '/tasks',
+      json({ limit: '8kb' }),
+      createTaskRouter(mongo, checkpointer, config, async (req) => {
+        const id = req.query.scope === 'owner' ? null : cookie.sessionId(req);
+        const session = id ? await sandbox.read(id, new Date()) : null;
+        if (session) {
+          return {
+            principal: { kind: 'sandbox', id: session._id },
+            world: session.world,
+            charge: async () =>
+              Boolean(
+                await sandbox.consume(
+                  session._id,
+                  new Date(),
+                  config.SANDBOX_REQUESTS_PER_MINUTE,
+                  1000,
+                ),
+              ),
+          };
+        }
+        if (req.query.scope === 'sandbox') return null;
+        const owner = await getOwner(req);
+        return owner
+          ? { principal: { kind: 'owner', id: owner.user.id } }
+          : null;
+      }),
+    );
   router.use(
     '/api/sandbox',
-    createSandboxRouter(new SandboxRepository(db), {
+    createSandboxRouter(sandbox, {
       secret: sandboxSecret,
       origin,
       ttlSeconds: config.SANDBOX_TTL_SECONDS,

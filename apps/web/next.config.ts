@@ -15,6 +15,7 @@ const config: NextConfig = {
   transpilePackages: ['@aide/shared'],
   async rewrites() {
     return [
+      { source: '/api/tasks/:path*', destination: apiOrigin + '/tasks/:path*' },
       { source: '/api/health', destination: apiOrigin + '/health' },
       {
         source: '/api/auth/:path*',

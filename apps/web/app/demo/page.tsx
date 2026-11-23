@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { sandboxViewSchema } from '@aide/shared/domain';
 import { sessionRequest } from '@/lib/session-api';
+import { Assistant } from '../assistant';
 
 export default async function DemoPage() {
   const response = await sessionRequest('/api/sandbox');
@@ -41,6 +42,7 @@ export default async function DemoPage() {
           <dd>{tokensRemaining}</dd>
         </div>
       </dl>
+      <Assistant scope="sandbox" />
     </main>
   );
 }

@@ -48,6 +48,14 @@ Owner registration is a local CLI operation. Set `AIDE_SESSION_SECRET` in the ro
 
 The API creates its indexes when it first handles a session request. You can pre-create them with `pnpm db:bootstrap`. Set `TEST_MONGODB_URI` in your test shell to the Compose replica-set URI and run `pnpm test` for auth, session isolation, request and token limits, and TTL cleanup. The TTL monitor test can take about a minute.
 
+## Assistant timeline
+
+Open the demo or sign into the owner workspace and ask **What’s on Sam’s calendar and in the inbox?** The timeline shows the plan, mock tool calls and result counts, and the streamed answer. Cancel while a task is running to stop it. The demo uses MockLLM and reserves 1,000 units of its token allowance per submitted task. Refresh the demo to see its current balance.
+
+The owner also uses MockLLM unless a provider is configured. Set `AIDE_LLM_PROVIDER=gemini`, `AIDE_MODEL`, and `GOOGLE_GENERATIVE_AI_API_KEY` for Gemini. Alternatively set `AIDE_LLM_PROVIDER=ollama` and `AIDE_MODEL` to a local model that supports structured output. The default Ollama base URL is `http://127.0.0.1:11434/v1`. Gemini is selected automatically when its key is supplied and no provider is specified. The sandbox always uses MockLLM.
+
+The API persists run events for SSE replay and saves checkpoints to MongoDB. Cancellation and execution are local to the running API process. A restart does not automatically resume an interrupted task.
+
 ## Local MCP tools
 
 With `pnpm dev` running, the local API serves Streamable HTTP at `/mcp/calendar` and `/mcp/mail`. See [MCP setup](docs/MCP.md) for tool examples, Inspector, and Claude Desktop configuration.

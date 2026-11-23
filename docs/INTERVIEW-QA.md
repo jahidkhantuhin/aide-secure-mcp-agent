@@ -41,3 +41,17 @@ The official SDK client calls each tool, and the contract suite compares provide
 **What changes when the mock provider is replaced?**
 
 The tools bind to typed calendar and mail interfaces. A replacement provider implements those contracts. Authorization and approval have to be enforced independently of annotations.
+
+## Step 4
+
+**How does the browser recover missed timeline updates?**
+
+Each persisted event gets a sequence ID. EventSource resends its last seen ID on reconnect, and the API reads later events from MongoDB in order.
+
+**What does cancelling a task do?**
+
+The API checks the task owner, then aborts the active run. The graph, model, and MCP client receive the signal, and the timeline receives a cancellation event.
+
+**Why use both checkpoints and an event log?**
+
+LangGraph checkpoints record execution state. The event log gives the UI a durable stream with a simple replay cursor.

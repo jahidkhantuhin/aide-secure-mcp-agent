@@ -1,5 +1,7 @@
 import { randomBytes } from 'node:crypto';
+import { MongoDBSaver } from '@langchain/langgraph-checkpoint-mongodb';
 import { MongoClient } from 'mongodb';
+import { MongoClient as CheckpointClient } from 'mongodb-checkpoint';
 import { createClient } from 'redis';
 import { createSessionRoutes } from './session-routes.js';
 import { createApp } from './app.js';
@@ -10,6 +12,14 @@ const config = configSchema.parse(process.env);
 const mongo = new MongoClient(config.MONGODB_URI, {
   serverSelectionTimeoutMS: 2_000,
   socketTimeoutMS: 2_500,
+});
+const checkpointClient = new CheckpointClient(config.MONGODB_URI, {
+  serverSelectionTimeoutMS: 2000,
+});
+const checkpointer = new MongoDBSaver({
+  client: checkpointClient,
+  dbName: mongo.db().databaseName,
+  ttl: 86400,
 });
 const redis = createClient({
   url: config.REDIS_URL,
@@ -39,6 +49,7 @@ const server = createApp(
     mongo,
     config,
     config.AIDE_SESSION_SECRET ?? randomBytes(32).toString('base64url'),
+    checkpointer,
   ),
   mcp.router,
 ).listen(config.API_PORT, '127.0.0.1', () => {
@@ -55,7 +66,7 @@ function shutdown() {
   server.close(async () => {
     try {
       if (redis.isOpen) redis.destroy();
-      await Promise.all([closeMcp, mongo.close()]);
+      await Promise.all([closeMcp, mongo.close(), checkpointClient.close()]);
     } catch (error) {
       console.error('Connection cleanup failed:', error);
       process.exitCode = 1;

@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { ownerViewSchema } from '@aide/shared/domain';
 import { sessionRequest } from '@/lib/session-api';
 import { SignOut } from './sign-out';
+import { Assistant } from '../assistant';
 
 export default async function WorkspacePage() {
   const response = await sessionRequest('/api/auth/me');
@@ -17,6 +18,7 @@ export default async function WorkspacePage() {
       <h1 className="mt-6 text-3xl font-semibold">Owner workspace</h1>
       <p className="my-5">Signed in as {owner.name}</p>
       <SignOut />
+      <Assistant scope="owner" />
     </main>
   );
 }

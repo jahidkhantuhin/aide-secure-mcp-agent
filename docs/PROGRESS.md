@@ -13,3 +13,7 @@ Added local owner enrollment, Better Auth sign-in and sign-out, protected web ro
 ## Step 3
 
 Seeded new sandbox sessions with Sam Rivera's mock world and added calendar and mail tool servers on MCP 2026-07-28. The local HTTP handlers use fresh protocol instances, while explicit revisions and draft data carry context across requests. Both package suites run in the shared push and CI gate.
+
+## Step 4
+
+Added a checkpointed LangGraph task runner, session-scoped SSE replay and cancellation, and an Assistant timeline in the demo and owner workspaces. The runner reads isolated mock calendar and mail data over MCP and streams its answer. The shared push and CI gate runs the graph and task API tests.
