@@ -1,5 +1,7 @@
 'use client';
 
+import { Button } from '@/components/ui/button';
+
 import { agentEventSchema } from '@aide/shared/domain';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 
@@ -147,22 +149,18 @@ export function Assistant({ scope }: { scope: 'owner' | 'sandbox' }) {
           required
         />
         <div className="flex gap-3">
-          <button
-            type="submit"
-            disabled={running || !prompt.trim()}
-            className="rounded bg-emerald-200 px-4 py-2 font-medium text-neutral-900 disabled:opacity-60"
-          >
+          <Button type="submit" disabled={running || !prompt.trim()}>
             Run task
-          </button>
+          </Button>
           {running && (
-            <button
+            <Button
               type="button"
               onClick={cancel}
               disabled={!runId || status === 'cancelling'}
-              className="rounded border border-neutral-500 px-4 py-2 disabled:opacity-60"
+              variant="secondary"
             >
               Cancel
-            </button>
+            </Button>
           )}
         </div>
       </form>

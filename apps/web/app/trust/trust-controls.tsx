@@ -1,5 +1,7 @@
 'use client';
 
+import { Button } from '@/components/ui/button';
+
 import { useEffect, useState, type FormEvent } from 'react';
 import {
   defaultTrustMode,
@@ -19,8 +21,6 @@ const labels: Record<TrustMode, string> = {
   narrow_auto: 'Narrow auto',
 };
 const field = 'rounded border border-neutral-600 bg-neutral-900 px-3 py-2';
-const action =
-  'rounded border border-neutral-500 px-3 py-2 disabled:opacity-60';
 
 export function TrustControls({
   initial,
@@ -144,14 +144,14 @@ export function TrustControls({
           Team mail covers {teamRecipients.join(' and ')} for one hour. Narrow
           auto uses it from 09:00 to 17:00 UTC.
         </p>
-        <button
+        <Button
           type="button"
-          className={action}
+          variant="secondary"
           disabled={pending}
           onClick={() => void update('grants')}
         >
           Grant team mail for 1 hour
-        </button>
+        </Button>
         <ul className="mt-4 space-y-2">
           {state.grants.map((grant) => {
             const seconds = Math.max(
@@ -169,14 +169,14 @@ export function TrustControls({
                     ? `${Math.floor(seconds / 60)}m ${seconds % 60}s remaining`
                     : 'Expired'}
                 </span>
-                <button
+                <Button
                   type="button"
-                  className={action}
+                  variant="danger"
                   disabled={pending || !seconds}
                   onClick={() => void update('grants/' + grant.id + '/revoke')}
                 >
                   Revoke
-                </button>
+                </Button>
               </li>
             );
           })}
@@ -223,22 +223,22 @@ export function TrustControls({
               <option value="restricted">Restricted</option>
             </select>
           </label>
-          <button className={action + ' self-end'} disabled={pending}>
+          <Button type="submit" className="self-end" disabled={pending}>
             Evaluate policy
-          </button>
+          </Button>
         </form>
       </section>
       <section aria-label="Decision traces">
         <div className="flex items-center justify-between gap-3">
           <h2 className="text-xl font-medium">Decision traces</h2>
-          <button
+          <Button
             type="button"
-            className={action}
+            variant="secondary"
             disabled={pending}
             onClick={() => void update('')}
           >
             Refresh
-          </button>
+          </Button>
         </div>
         {!state.decisions.length && (
           <p className="mt-3 text-sm text-neutral-300">

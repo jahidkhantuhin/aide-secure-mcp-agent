@@ -12,6 +12,7 @@ import { createSandboxRouter, sandboxCookie } from './sandbox.js';
 import { createTaskRouter } from './tasks.js';
 import { PolicyRepository } from './policy-repository.js';
 import { createTrustRouter } from './trust.js';
+import { createApprovalsRouter } from './approvals.js';
 
 export function createSessionRoutes(
   mongo: MongoClient,
@@ -32,7 +33,7 @@ export function createSessionRoutes(
   }
 
   router.use(
-    ['/api/auth', '/api/sandbox', '/tasks', '/trust'],
+    ['/api/auth', '/api/sandbox', '/tasks', '/trust', '/approvals'],
     async (_req, res, next) => {
       res.set('Cache-Control', 'no-store');
       await ready();
@@ -74,6 +75,19 @@ export function createSessionRoutes(
     }),
   );
   const cookie = sandboxCookie(origin, sandboxSecret);
+  if (checkpointer)
+    router.use(
+      '/approvals',
+      json({ limit: '16kb' }),
+      createApprovalsRouter(
+        mongo,
+        checkpointer,
+        config.REDIS_URL,
+        config.AIDE_UNDO_SECONDS * 1000,
+        origin,
+        async (req) => (await getOwner(req))?.user.id,
+      ),
+    );
   if (checkpointer)
     router.use(
       '/tasks',

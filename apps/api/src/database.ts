@@ -3,6 +3,12 @@ import type { Db } from 'mongodb';
 export async function ensureIndexes(db: Db) {
   await Promise.all([
     db
+      .collection('approvals')
+      .createIndexes([
+        { key: { ownerId: 1, createdAt: -1 } },
+        { key: { status: 1, processedAt: 1, createdAt: 1 } },
+      ]),
+    db
       .collection('policies')
       .createIndex(
         { 'principal.kind': 1, 'principal.id': 1, version: -1 },

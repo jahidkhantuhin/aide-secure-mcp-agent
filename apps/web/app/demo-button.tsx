@@ -1,5 +1,7 @@
 'use client';
 
+import { Button } from '@/components/ui/button';
+
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
@@ -32,14 +34,9 @@ export function DemoButton() {
 
   return (
     <div>
-      <button
-        type="button"
-        disabled={pending}
-        onClick={enter}
-        className="rounded bg-emerald-200 px-4 py-2 font-medium text-neutral-900 disabled:opacity-70"
-      >
+      <Button type="button" disabled={pending} onClick={enter}>
         {pending ? 'Opening demo…' : 'Try the demo, no signup'}
-      </button>
+      </Button>
       {error && (
         <p role="alert" className="mt-2 text-red-300">
           {error}

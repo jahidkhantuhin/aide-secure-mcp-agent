@@ -4,7 +4,10 @@
   "private": true,
   "author": "Jahid Khan Tuhin",
   "type": "module",
-  "exports": "./src/index.ts",
+  "exports": {
+    "./approval": "./src/approval.ts",
+    ".": "./src/index.ts"
+  },
   "scripts": {
     "typecheck": "tsc",
     "test": "vitest run"

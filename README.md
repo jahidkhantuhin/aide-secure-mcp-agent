@@ -62,6 +62,12 @@ Sign in as the owner and choose **Trust settings**. Change a tool's trust mode a
 
 Use **Preview a decision** to check mock write rules without running a tool. For example, preview `send` to `external@partner.test` to see why it needs approval. **Narrow auto** can match an active one-hour grant for the listed team addresses during 09:00–17:00 UTC. The Assistant still only calls read tools. The localhost Inspector endpoints remain mock development fixtures.
 
+## Approvals and Undo
+
+Sign in as the owner and open **Approvals** to request a mock email or calendar move. Review the action and its risk, edit mail if needed, then approve or reject. Approval starts the undo window, which defaults to ten seconds. The worker applies changes to the MongoDB mock calendar or outbox after the window. The page refreshes approval status every second. A calendar move stores an inverse operation for future rollback.
+
+`pnpm dev` starts the worker alongside the API and web app. The approval worker uses the existing MongoDB replica set and Redis. Set `AIDE_UNDO_SECONDS` to change the window. The Assistant continues to offer read tools, and the Approvals page is the entry point for mock writes.
+
 ## Local MCP tools
 
 With `pnpm dev` running, the local API serves Streamable HTTP at `/mcp/calendar` and `/mcp/mail`. See [MCP setup](docs/MCP.md) for tool examples, Inspector, and Claude Desktop configuration.

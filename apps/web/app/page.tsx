@@ -1,5 +1,6 @@
 import { ApiStatus } from './status';
 import { DemoButton } from './demo-button';
+import { Button } from '@/components/ui/button';
 
 const sections = [
   'Assistant',
@@ -31,13 +32,13 @@ export default function Home() {
               >
                 {section}
               </a>
-            ) : section === 'Trust' ? (
+            ) : section === 'Trust' || section === 'Approvals' ? (
               <a
                 key={section}
-                href="/trust"
+                href={section === 'Trust' ? '/trust' : '/approvals'}
                 className="px-3 py-2 text-sm text-[#b6ecc5]"
               >
-                Trust
+                {section}
               </a>
             ) : (
               <span
@@ -67,12 +68,9 @@ export default function Home() {
           </p>
           <div className="mt-8 flex flex-wrap items-start gap-4">
             <DemoButton />
-            <a
-              href="/login"
-              className="rounded border border-neutral-500 px-4 py-2"
-            >
+            <Button href="/login" variant="secondary">
               Owner sign in
-            </a>
+            </Button>
           </div>
         </section>
       </main>

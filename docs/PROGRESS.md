@@ -21,3 +21,7 @@ Added a checkpointed LangGraph task runner, session-scoped SSE replay and cancel
 ## Step 5
 
 Added deterministic tool decisions, owner trust modes, immutable MongoDB policy versions, and expiring team-mail grants. Agent tool calls now record and stream a decision before execution. The owner Trust page can change settings, revoke grants, and preview decisions.
+
+## Step 6
+
+Added owner mock-action previews, checkpointed approval, editable drafts, and revision-checked decisions. The BullMQ worker applies mock actions after the undo window. Each approval outcome and effect is recorded in MongoDB.

@@ -69,3 +69,17 @@ The repository filters expired and revoked grants and the pure policy checks exp
 **Why keep old policy versions?**
 
 A decision can be traced to the policy that produced it. A unique principal and version index also prevents concurrent edits from silently overwriting one another.
+
+## Step 6
+
+**Why can the API and worker stop at different times?**
+
+The API writes the approval state to MongoDB. The worker schedules from that record and resumes the graph from its checkpoint. A delayed job carries the approval ID, and the worker reads the current decision before execution.
+
+**What keeps a retry from sending the same message again?**
+
+The unique idempotency key, approved mock effect, and final state are written in one MongoDB transaction. Retries can see the completed key or terminal state.
+
+**How do edits and Undo stay safe?**
+
+Edits regenerate the card and increment its version. Approval requires that exact version. Undo checks the deadline and atomically changes the status before attempting to remove the Redis job.

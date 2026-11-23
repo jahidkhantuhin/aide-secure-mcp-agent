@@ -67,6 +67,23 @@ const eventBase = { threadId: id, runId: id, timestamp: count };
 export const agentEventSchema = z.discriminatedUnion('type', [
   z.strictObject({
     ...eventBase,
+    type: z.literal('APPROVAL_REQUESTED'),
+    approvalId: id,
+  }),
+  z.strictObject({
+    ...eventBase,
+    type: z.literal('APPROVAL_RESOLVED'),
+    approvalId: id,
+    decision: z.enum(['approved', 'rejected']),
+    approverId: id,
+  }),
+  z.strictObject({
+    ...eventBase,
+    type: z.literal('APPROVAL_UNDONE'),
+    approvalId: id,
+  }),
+  z.strictObject({
+    ...eventBase,
     type: z.literal('POLICY_DECISION'),
     tool: id,
     decision: decisionSchema,
@@ -137,6 +154,25 @@ export const runEventSchema = z.strictObject({
   createdAt: date,
 });
 export type RunEvent = z.infer<typeof runEventSchema>;
+export function approvalRunEvent(
+  runId: string,
+  sequence: number,
+  createdAt: Date,
+  detail: { type: string; [key: string]: unknown },
+): RunEvent {
+  return runEventSchema.parse({
+    _id: runId + ':' + sequence,
+    runId,
+    sequence,
+    createdAt,
+    event: {
+      ...detail,
+      runId,
+      threadId: runId,
+      timestamp: createdAt.getTime(),
+    },
+  });
+}
 export const approvalSchema = z.strictObject({
   _id: id,
   runId: id,

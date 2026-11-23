@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { once } from 'node:events';
+import { EventEmitter, once } from 'node:events';
 import type { AddressInfo } from 'node:net';
 import { setTimeout as delay } from 'node:timers/promises';
 import type { LLM } from '@aide/agent';
@@ -17,11 +17,15 @@ import { Router, json } from 'express';
 const uri = process.env.TEST_MONGODB_URI;
 const origin = 'http://localhost:3000';
 const ping = async () => 'PONG';
+const planning = new EventEmitter();
 const mock: LLM = {
   async plan(prompt, signal) {
     if (prompt === 'rate limited')
       throw Object.assign(new Error('Provider failure'), { statusCode: 429 });
-    if (prompt === 'slow') await delay(10_000, undefined, { signal });
+    if (prompt === 'slow') {
+      planning.emit('started');
+      await delay(20_000, undefined, { signal });
+    }
     return { tools: ['list_events'], query: '' };
   },
   async *respond() {
@@ -127,7 +131,10 @@ describe.skipIf(!uri)('task API', () => {
   });
 
   it('allows the owner of a running task to cancel it', async () => {
-    const id = await create('slow');
+    const [id] = await Promise.all([
+      create('slow'),
+      once(planning, 'started', { signal: AbortSignal.timeout(8_000) }),
+    ]);
     expect(
       (await req('/tasks/' + id + '/cancel', { method: 'POST' }, 'bob')).status,
     ).toBe(404);
@@ -137,7 +144,7 @@ describe.skipIf(!uri)('task API', () => {
     const body = await (await req('/tasks/' + id + '/events')).text();
     expect(body).toContain('RUN_CANCELLED');
     expect(body).not.toContain('TEXT_MESSAGE_CONTENT');
-  });
+  }, 15_000);
 
   it('persists an approval decision and stops before calling the tool', async () => {
     const policy = new PolicyRepository(mongo.db());

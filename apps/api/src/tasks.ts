@@ -14,7 +14,7 @@ import {
   type AgentEvent,
 } from '@aide/shared/domain';
 import { seedWorld } from '@aide/mock-world';
-import type { MockWorld } from '@aide/shared/mock-world';
+import { calendarEventSchema, type MockWorld } from '@aide/shared/mock-world';
 import type { MongoDBSaver } from '@langchain/langgraph-checkpoint-mongodb';
 import { Router, type Request } from 'express';
 import type { MongoClient } from 'mongodb';
@@ -105,8 +105,26 @@ export function createTaskRouter(
     let status: 'completed' | 'failed' | 'cancelled' = 'completed';
     try {
       await append({ type: 'RUN_STARTED' });
+      signal.throwIfAborted();
       await setupCheckpointer();
+      signal.throwIfAborted();
       const world = access.world ?? seedWorld(run._id);
+      if (access.principal.kind === 'owner') {
+        const changes = await db
+          .collection('mockCalendar')
+          .find({ ownerId: access.principal.id })
+          .toArray();
+        const revised = new Map(
+          changes.map((row) => [
+            row.eventId,
+            calendarEventSchema.parse(row.event),
+          ]),
+        );
+        world.calendar = world.calendar.map(
+          (event) => revised.get(event.id) ?? event,
+        );
+      }
+      signal.throwIfAborted();
       await runGraph({
         id: run._id,
         prompt,

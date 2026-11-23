@@ -1,5 +1,7 @@
 'use client';
 
+import { Button } from '@/components/ui/button';
+
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
@@ -27,14 +29,14 @@ export function SignOut() {
 
   return (
     <>
-      <button
+      <Button
         type="button"
         disabled={pending}
         onClick={signOut}
-        className="rounded border border-neutral-500 px-4 py-2"
+        variant="secondary"
       >
         {pending ? 'Signing out…' : 'Sign out'}
-      </button>
+      </Button>
       {error && (
         <p role="alert" className="mt-2 text-red-300">
           Unable to sign out. Try again.

@@ -24,6 +24,9 @@ export default async function WorkspacePage() {
         </a>
       </div>
       <Assistant scope="owner" />
+      <a href="/approvals" className="mt-5 inline-block text-emerald-300">
+        Request approval for a mock action
+      </a>
     </main>
   );
 }

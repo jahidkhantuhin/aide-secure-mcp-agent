@@ -8,6 +8,7 @@ export const configSchema = z.object({
     .default('mongodb://localhost:27027/aide?replicaSet=rs0'),
   REDIS_URL: z.url({ protocol: /^rediss?$/ }).default('redis://localhost:6389'),
   AIDE_SESSION_SECRET: z.string().min(32).optional(),
+  AIDE_UNDO_SECONDS: z.coerce.number().int().min(1).max(120).default(10),
   AIDE_LLM_PROVIDER: z.enum(['mock', 'gemini', 'ollama']).optional(),
   AIDE_MODEL: z.string().min(1).optional(),
   GOOGLE_GENERATIVE_AI_API_KEY: z.string().min(1).optional(),

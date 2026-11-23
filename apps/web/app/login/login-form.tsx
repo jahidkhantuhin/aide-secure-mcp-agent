@@ -1,5 +1,7 @@
 'use client';
 
+import { Button } from '@/components/ui/button';
+
 import { useRouter } from 'next/navigation';
 import { useState, type FormEvent } from 'react';
 
@@ -61,13 +63,9 @@ export function LoginForm() {
           className="rounded border border-neutral-600 bg-neutral-900 px-3 py-2"
         />
       </label>
-      <button
-        type="submit"
-        disabled={pending}
-        className="rounded bg-emerald-200 px-4 py-2 font-medium text-neutral-900 disabled:opacity-70"
-      >
+      <Button type="submit" disabled={pending}>
         {pending ? 'Signing in…' : 'Sign in'}
-      </button>
+      </Button>
       {error && (
         <p role="alert" className="text-red-300">
           {error}

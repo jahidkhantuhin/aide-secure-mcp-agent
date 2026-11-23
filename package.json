@@ -8,11 +8,11 @@
     "node": ">=22.12.0"
   },
   "scripts": {
-    "dev": "pnpm --parallel --filter @aide/api --filter @aide/web dev",
+    "dev": "pnpm --parallel --filter @aide/api --filter @aide/web --filter @aide/worker dev",
     "lint": "eslint .",
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r run test",
-    "check": "pnpm lint && pnpm typecheck && docker compose up -d --wait --wait-timeout 90 mongo mongo-init && node scripts/test-with-mongo.mjs && pnpm -r run build",
+    "check": "pnpm lint && pnpm typecheck && docker compose up -d --wait --wait-timeout 90 mongo mongo-init redis && node scripts/test-with-mongo.mjs && pnpm -r run build",
     "format": "prettier --write .",
     "prepare": "husky",
     "db:bootstrap": "pnpm --filter @aide/api db:bootstrap",
