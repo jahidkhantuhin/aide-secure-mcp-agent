@@ -60,6 +60,11 @@ export function Assistant({ scope }: { scope: 'owner' | 'sandbox' }) {
           setTimeline((entries) => [...entries, label]);
         }
         switch (data.type) {
+          case 'POLICY_DECISION':
+            add(
+              `Policy for ${data.tool}: ${data.decision.outcome.replaceAll('_', ' ')}. ${data.decision.reasons.join(' ')}`,
+            );
+            break;
           case 'STEP_STARTED':
             add(data.stepName);
             break;

@@ -1,7 +1,9 @@
 import 'server-only';
 import { headers } from 'next/headers';
 
-export async function sessionRequest(path: '/api/auth/me' | '/api/sandbox') {
+export async function sessionRequest(
+  path: '/api/auth/me' | '/api/sandbox' | '/trust',
+) {
   const incoming = await headers();
   const cookie = incoming.get('cookie');
   if (!cookie) return null;

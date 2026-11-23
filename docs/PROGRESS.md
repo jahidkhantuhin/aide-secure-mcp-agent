@@ -17,3 +17,7 @@ Seeded new sandbox sessions with Sam Rivera's mock world and added calendar and 
 ## Step 4
 
 Added a checkpointed LangGraph task runner, session-scoped SSE replay and cancellation, and an Assistant timeline in the demo and owner workspaces. The runner reads isolated mock calendar and mail data over MCP and streams its answer. The shared push and CI gate runs the graph and task API tests.
+
+## Step 5
+
+Added deterministic tool decisions, owner trust modes, immutable MongoDB policy versions, and expiring team-mail grants. Agent tool calls now record and stream a decision before execution. The owner Trust page can change settings, revoke grants, and preview decisions.

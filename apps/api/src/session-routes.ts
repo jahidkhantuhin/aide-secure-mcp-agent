@@ -10,6 +10,8 @@ import { ensureIndexes } from './database.js';
 import { SandboxRepository } from './sandbox-repository.js';
 import { createSandboxRouter, sandboxCookie } from './sandbox.js';
 import { createTaskRouter } from './tasks.js';
+import { PolicyRepository } from './policy-repository.js';
+import { createTrustRouter } from './trust.js';
 
 export function createSessionRoutes(
   mongo: MongoClient,
@@ -30,7 +32,7 @@ export function createSessionRoutes(
   }
 
   router.use(
-    ['/api/auth', '/api/sandbox', '/tasks'],
+    ['/api/auth', '/api/sandbox', '/tasks', '/trust'],
     async (_req, res, next) => {
       res.set('Cache-Control', 'no-store');
       await ready();
@@ -62,35 +64,51 @@ export function createSessionRoutes(
     });
   }
   const sandbox = new SandboxRepository(db);
+  const policy = new PolicyRepository(db);
+  router.use(
+    '/trust',
+    json({ limit: '16kb' }),
+    createTrustRouter(policy, origin, async (req) => {
+      const owner = await getOwner(req);
+      return owner ? { kind: 'owner', id: owner.user.id } : null;
+    }),
+  );
   const cookie = sandboxCookie(origin, sandboxSecret);
   if (checkpointer)
     router.use(
       '/tasks',
       json({ limit: '8kb' }),
-      createTaskRouter(mongo, checkpointer, config, async (req) => {
-        const id = req.query.scope === 'owner' ? null : cookie.sessionId(req);
-        const session = id ? await sandbox.read(id, new Date()) : null;
-        if (session) {
-          return {
-            principal: { kind: 'sandbox', id: session._id },
-            world: session.world,
-            charge: async () =>
-              Boolean(
-                await sandbox.consume(
-                  session._id,
-                  new Date(),
-                  config.SANDBOX_REQUESTS_PER_MINUTE,
-                  1000,
+      createTaskRouter(
+        mongo,
+        checkpointer,
+        config,
+        async (req) => {
+          const id = req.query.scope === 'owner' ? null : cookie.sessionId(req);
+          const session = id ? await sandbox.read(id, new Date()) : null;
+          if (session) {
+            return {
+              principal: { kind: 'sandbox', id: session._id },
+              world: session.world,
+              charge: async () =>
+                Boolean(
+                  await sandbox.consume(
+                    session._id,
+                    new Date(),
+                    config.SANDBOX_REQUESTS_PER_MINUTE,
+                    1000,
+                  ),
                 ),
-              ),
-          };
-        }
-        if (req.query.scope === 'sandbox') return null;
-        const owner = await getOwner(req);
-        return owner
-          ? { principal: { kind: 'owner', id: owner.user.id } }
-          : null;
-      }),
+            };
+          }
+          if (req.query.scope === 'sandbox') return null;
+          const owner = await getOwner(req);
+          return owner
+            ? { principal: { kind: 'owner', id: owner.user.id } }
+            : null;
+        },
+        undefined,
+        policy,
+      ),
     );
   router.use(
     '/api/sandbox',

@@ -2,6 +2,12 @@ import type { Db } from 'mongodb';
 
 export async function ensureIndexes(db: Db) {
   await Promise.all([
+    db
+      .collection('policies')
+      .createIndex(
+        { 'principal.kind': 1, 'principal.id': 1, version: -1 },
+        { unique: true },
+      ),
     db.collection('users').createIndex({ ownerSlot: 1 }, { unique: true }),
     db
       .collection('sessions')

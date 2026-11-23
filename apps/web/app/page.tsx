@@ -31,6 +31,14 @@ export default function Home() {
               >
                 {section}
               </a>
+            ) : section === 'Trust' ? (
+              <a
+                key={section}
+                href="/trust"
+                className="px-3 py-2 text-sm text-[#b6ecc5]"
+              >
+                Trust
+              </a>
             ) : (
               <span
                 key={section}

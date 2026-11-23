@@ -64,10 +64,12 @@ export function runGraph(options: {
   signal: AbortSignal;
   llm: LLM;
   tool: RunTool;
+  authorizeTool: (tool: Plan['tools'][number]) => Promise<void>;
   emit: (event: GraphEvent) => Promise<void>;
   checkpointer: BaseCheckpointSaver;
 }) {
-  const { id, prompt, signal, llm, tool, emit, checkpointer } = options;
+  const { id, prompt, signal, llm, tool, authorizeTool, emit, checkpointer } =
+    options;
   async function step<T>(stepName: string, operation: () => Promise<T>) {
     signal.throwIfAborted();
     await emit({ type: 'STEP_STARTED', stepName });
@@ -93,6 +95,8 @@ export function runGraph(options: {
         const index = state.observations.length;
         const name = state.plan.tools[index];
         const toolCallId = `${id}:tool:${index}`;
+        await authorizeTool(name);
+        signal.throwIfAborted();
         await emit({ type: 'TOOL_CALL_START', toolCallId, toolCallName: name });
         const count = await tool(name, state.plan.query, signal);
         await emit({ type: 'TOOL_CALL_END', toolCallId });

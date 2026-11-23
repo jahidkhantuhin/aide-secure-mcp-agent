@@ -21,6 +21,7 @@ import type { MongoClient } from 'mongodb';
 import type { z } from 'zod';
 import type { configSchema } from './config.js';
 import { TaskRepository } from './task-repository.js';
+import { PolicyRepository } from './policy-repository.js';
 
 type TaskAccess = {
   principal: Principal;
@@ -39,6 +40,7 @@ export function createTaskRouter(
   config: z.infer<typeof configSchema>,
   authorize: (req: Request) => Promise<TaskAccess | null>,
   mock: LLM = new MockLLM(),
+  policy: PolicyRepository = new PolicyRepository(mongo.db()),
 ) {
   const db = mongo.db();
   const repository = new TaskRepository(db);
@@ -108,6 +110,23 @@ export function createTaskRouter(
         signal,
         checkpointer,
         llm: access.principal.kind === 'sandbox' ? mock : owner,
+        authorizeTool: async (name) => {
+          const decision = await policy.decide(
+            access.principal,
+            {
+              tool: name,
+              recipients: [],
+              sensitivity: 'internal',
+            },
+            'agent',
+            new Date(),
+            run._id,
+          );
+          const event = { type: 'POLICY_DECISION', tool: name, decision };
+          await append(event);
+          if (decision.outcome !== 'allow')
+            throw new Error('Tool blocked by policy.');
+        },
         tool: (name, query, abortSignal) =>
           callMockTool(world, name, query, abortSignal),
         emit: append,

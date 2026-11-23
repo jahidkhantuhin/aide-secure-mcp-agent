@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { mockWorldSchema } from '@aide/shared/mock-world';
+import { decisionSchema } from '@aide/shared/policy';
 
 const id = z.string().min(1);
 const date = z.date();
@@ -64,6 +65,12 @@ export const taskInputSchema = z.strictObject({
 
 const eventBase = { threadId: id, runId: id, timestamp: count };
 export const agentEventSchema = z.discriminatedUnion('type', [
+  z.strictObject({
+    ...eventBase,
+    type: z.literal('POLICY_DECISION'),
+    tool: id,
+    decision: decisionSchema,
+  }),
   z.strictObject({ ...eventBase, type: z.literal('RUN_STARTED') }),
   z.strictObject({ ...eventBase, type: z.literal('RUN_FINISHED') }),
   z.strictObject({
@@ -145,6 +152,7 @@ export const grantSchema = z.strictObject({
   createdAt: date,
   expiresAt: date,
   revokedAt: date.optional(),
+  recipients: z.array(z.email()).optional(),
 });
 export const idempotencyKeySchema = z.strictObject({
   _id: id,
@@ -159,6 +167,9 @@ export const auditLogSchema = z.strictObject({
   action: id,
   runId: id.optional(),
   createdAt: date,
+  tool: id.optional(),
+  policyVersion: count.optional(),
+  decision: decisionSchema.optional(),
 });
 export const attackAttemptSchema = z.strictObject({
   _id: id,

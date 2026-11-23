@@ -11,6 +11,7 @@ import { createApp } from '../src/app.js';
 import { configSchema } from '../src/config.js';
 import { ensureIndexes } from '../src/database.js';
 import { createTaskRouter } from '../src/tasks.js';
+import { PolicyRepository } from '../src/policy-repository.js';
 import { Router, json } from 'express';
 
 const uri = process.env.TEST_MONGODB_URI;
@@ -134,5 +135,65 @@ describe.skipIf(!uri)('task API', () => {
     const body = await (await req('/tasks/' + id + '/events')).text();
     expect(body).toContain('RUN_CANCELLED');
     expect(body).not.toContain('TEXT_MESSAGE_CONTENT');
+  });
+
+  it('persists an approval decision and stops before calling the tool', async () => {
+    const policy = new PolicyRepository(mongo.db());
+    const principal = { kind: 'owner', id: 'alice' } as const;
+    expect(await policy.change(principal, 0, 'list_events', 'ask_first')).toBe(
+      true,
+    );
+    const id = await create('calendar');
+    const body = await (await req('/tasks/' + id + '/events')).text();
+    expect(body).toContain('POLICY_DECISION');
+    expect(body).toContain('require_approval');
+    expect(body).not.toContain('TOOL_CALL_RESULT');
+    expect(body).not.toContain('TOOL_CALL_START');
+    expect(await policy.decisions(principal)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          runId: id,
+          policyVersion: 1,
+          decision: expect.objectContaining({ outcome: 'require_approval' }),
+        }),
+      ]),
+    );
+  });
+
+  it('versions policy changes, audits matching grants, and denies grant use after revocation', async () => {
+    const policy = new PolicyRepository(mongo.db());
+    const principal = { kind: 'owner', id: 'bob' } as const;
+    const now = new Date('2026-11-23T10:00:00Z');
+    const mail = {
+      tool: 'send',
+      recipients: ['ari@example.test'],
+      sensitivity: 'internal',
+    } as const;
+    const input = { ...mail, recipients: [...mail.recipients] };
+    const changes = await Promise.all([
+      policy.change(principal, 0, 'send', 'narrow_auto'),
+      policy.change(principal, 0, 'send', 'narrow_auto'),
+    ]);
+    expect(changes.filter(Boolean)).toHaveLength(1);
+    await policy.grantTeamMail(principal, now);
+    const [grant] = await policy.activeGrants(principal, now);
+    expect(
+      (await policy.decide(principal, input, 'preview', now)).grantId,
+    ).toBe(grant._id);
+    expect((await policy.decide(principal, input, 'agent', now)).grantId).toBe(
+      grant._id,
+    );
+    const audits = await policy.decisions(principal);
+    expect(audits.map(({ action }) => action).sort()).toEqual([
+      'grant_used',
+      'policy_preview',
+    ]);
+    expect(
+      await policy.revoke({ kind: 'owner', id: 'different' }, grant._id, now),
+    ).toBe(false);
+    expect(await policy.revoke(principal, grant._id, now)).toBe(true);
+    expect((await policy.decide(principal, input, 'agent', now)).outcome).toBe(
+      'require_approval',
+    );
   });
 });

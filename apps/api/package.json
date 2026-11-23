@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@aide/agent": "workspace:*",
+    "@aide/guard": "workspace:*",
     "@aide/mcp-calendar": "workspace:*",
     "@aide/mcp-mail": "workspace:*",
     "@aide/mock-world": "workspace:*",

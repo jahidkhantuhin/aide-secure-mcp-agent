@@ -1,0 +1,21 @@
+{
+  "name": "@aide/guard",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "author": "Jahid Khan Tuhin",
+  "exports": {
+    "./policy": "./policy/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@aide/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "fast-check": "^4.11.0",
+    "vitest": "^4.0.0"
+  }
+}

@@ -56,6 +56,12 @@ The owner also uses MockLLM unless a provider is configured. Set `AIDE_LLM_PROVI
 
 The API persists run events for SSE replay and saves checkpoints to MongoDB. Cancellation and execution are local to the running API process. A restart does not automatically resume an interrupted task.
 
+## Trust settings
+
+Sign in as the owner and choose **Trust settings**. Change a tool's trust mode and inspect the policy version. To see that decision on a real run, set `list_events` to **Ask first**, then ask the Assistant about Sam's calendar. The timeline records the approval requirement and stops before reading the calendar. Set it back to **Read-only** to allow the read.
+
+Use **Preview a decision** to check mock write rules without running a tool. For example, preview `send` to `external@partner.test` to see why it needs approval. **Narrow auto** can match an active one-hour grant for the listed team addresses during 09:00–17:00 UTC. The Assistant still only calls read tools. The localhost Inspector endpoints remain mock development fixtures.
+
 ## Local MCP tools
 
 With `pnpm dev` running, the local API serves Streamable HTTP at `/mcp/calendar` and `/mcp/mail`. See [MCP setup](docs/MCP.md) for tool examples, Inspector, and Claude Desktop configuration.

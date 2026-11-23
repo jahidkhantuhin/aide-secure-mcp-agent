@@ -55,3 +55,17 @@ The API checks the task owner, then aborts the active run. The graph, model, and
 **Why use both checkpoints and an event log?**
 
 LangGraph checkpoints record execution state. The event log gives the UI a durable stream with a simple replay cursor.
+
+## Step 5
+
+**Can changing a prompt override a policy outcome?**
+
+No. The policy checks a trusted tool registry, settings, data sensitivity, recipients, clock, and grant scope. The runner persists the decision before invoking a tool.
+
+**How do grants expire and get audited?**
+
+The repository filters expired and revoked grants and the pure policy checks expiry against the supplied clock. A grant-backed authorization is recorded with the grant ID and policy version.
+
+**Why keep old policy versions?**
+
+A decision can be traced to the policy that produced it. A unique principal and version index also prevents concurrent edits from silently overwriting one another.

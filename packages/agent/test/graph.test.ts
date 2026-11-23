@@ -14,6 +14,7 @@ describe('task graph', () => {
     const world = seedWorld('graph-test');
     const checkpointer = new MemorySaver();
     const result = await runGraph({
+      authorizeTool: async () => {},
       id: 'graph-test',
       prompt: 'Calendar and inbox',
       signal: new AbortController().signal,

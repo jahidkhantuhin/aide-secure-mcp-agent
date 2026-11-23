@@ -17,7 +17,12 @@ export default async function WorkspacePage() {
       </a>
       <h1 className="mt-6 text-3xl font-semibold">Owner workspace</h1>
       <p className="my-5">Signed in as {owner.name}</p>
-      <SignOut />
+      <div className="flex items-center gap-4">
+        <SignOut />
+        <a href="/trust" className="text-emerald-300">
+          Trust settings
+        </a>
+      </div>
       <Assistant scope="owner" />
     </main>
   );
