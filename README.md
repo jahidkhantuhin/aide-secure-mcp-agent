@@ -2,6 +2,8 @@
 
 **Agents that ask before they act.**
 
+[![M8ven Score](https://m8ven.ai/badge/mcp/jahidkhantuhin-aide-secure-mcp-agent-9kzxga?v=aa99b3b248946df2d67d21940213dea5)](https://m8ven.ai/mcp/jahidkhantuhin-aide-secure-mcp-agent-9kzxga?s=readme)
+
 Aide is a personal AI assistant designed to read untrusted content and give the user control over actions that affect other people and accounts.
 
 ## Project goals
