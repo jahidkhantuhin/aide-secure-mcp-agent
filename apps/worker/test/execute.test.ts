@@ -82,11 +82,24 @@ describe.skipIf(!uri || !redisUrl)('approval job', () => {
   }
 
   it('waits for the delayed job, commits once on replay, and skips undone work', async () => {
-    const id = await insert('approved', new Date(Date.now() + 500));
-    await expect(run(id)).rejects.toThrow('Undo window is still open');
-    const job = await queue.add('resolve', { id }, { jobId: id, delay: 550 });
+    const undoUntil = new Date();
+    const id = await insert('approved', undoUntil);
+    const runBeforeDeadline = createApprovalProcessor(
+      mongo,
+      async (_run, decision) => decision,
+      () => new Date(undoUntil.getTime() - 1),
+    );
+    await expect(runBeforeDeadline(id)).rejects.toThrow(
+      'Undo window is still open',
+    );
     expect(await db.collection('mockOutbox').countDocuments()).toBe(0);
+    const delay = 550;
+    const job = await queue.add('resolve', { id }, { jobId: id, delay });
     await job.waitUntilFinished(events, 5000);
+    const completedJob = await queue.getJob(id);
+    expect(completedJob?.processedOn).toBeGreaterThanOrEqual(
+      job.timestamp + delay,
+    );
     await run(id);
     expect(await db.collection('mockOutbox').countDocuments()).toBe(1);
     expect(
